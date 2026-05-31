@@ -1455,14 +1455,17 @@ function updateAltitudeUI() {
 }
 
 function updateAzimuthUI() {
-  // heading 0 = North
+  // alpha = cap de l'iPhone en degrés horaires depuis le Nord (0=N, 90=E, 180=S, 270=O)
+  // L'aiguille SVG pointe vers le haut (N) au repos → on la contre-rotate de -az
+  // pour qu'elle pointe toujours vers le Nord réel pendant que l'iPhone tourne.
   const az = ((heading % 360) + 360) % 360;
   document.getElementById('azimuth-val').textContent = az.toFixed(1) + '°';
 
-  // Rotate compass needle (needle points to N, so rotate by -az)
-  document.getElementById('compass-needle').style.transform = `rotate(${az}deg)`;
+  document.getElementById('compass-needle').style.transform = `rotate(${-az}deg)`;
   document.getElementById('compass-needle').style.transformOrigin = '60px 60px';
 
+  // diff > 0 : l'iPhone (et donc la monture) est tourné vers l'Est → corriger vers la gauche (Ouest)
+  // diff < 0 : tourné vers l'Ouest → corriger vers la droite (Est)
   const diff = az > 180 ? az - 360 : az;
   const corrEl = document.getElementById('azimuth-corr');
   if (Math.abs(diff) < 0.5) {
@@ -1667,10 +1670,13 @@ function updateStepAz(v) {
     document.getElementById('instr-az').className = 'instr-text ok';
     document.getElementById('btn-val-az').className = 'btn-nav success';
   } else {
-    arr.textContent = v > 0 ? '◀' : '▶';
+    // v = diff = az si az≤180, az-360 si az>180
+    // v > 0 : monture tournée vers l'Est → pivoter vers la gauche (Ouest)
+    // v < 0 : monture tournée vers l'Ouest → pivoter vers la droite (Est)
+    arr.textContent = v > 0 ? '▶' : '◀';
     document.getElementById('instr-az').innerHTML = v > 0
-      ? `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la gauche</strong> (sens antihoraire vu d'en haut).`
-      : `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la droite</strong> (sens horaire vu d'en haut).`;
+      ? `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la droite</strong> (sens horaire vu d'en haut).`
+      : `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la gauche</strong> (sens antihoraire vu d'en haut).`;
     document.getElementById('instr-az').className = 'instr-text';
     document.getElementById('btn-val-az').className = 'btn-nav primary';
   }
