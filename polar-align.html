@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PolAlign — Mise en Station</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #050810;
+    --bg2: #080d1a;
+    --panel: rgba(10, 18, 35, 0.92);
+    --border: rgba(80, 160, 255, 0.18);
+    --accent: #3a8fff;
+    --accent2: #00e5ff;
+    --green: #00ff9d;
+    --red: #ff3d6b;
+    --amber: #ffb800;
+    --text: #c8deff;
+    --text-dim: #4a6a9a;
+    --glow: 0 0 20px rgba(58, 143, 255, 0.4);
+    --glow-green: 0 0 16px rgba(0, 255, 157, 0.5);
+    --glow-red: 0 0 16px rgba(255, 61, 107, 0.5);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 40% 8%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 65%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 22%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 82% 50%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 78%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 15% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 55%, rgba(180,200,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 48% 30%, rgba(180,200,255,0.5) 0%, transparent 100%),
+      radial-gradient(2px 2px at 75% 5%, rgba(255,255,255,0.8) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    max-width: 430px;
+    margin: 0 auto;
+    padding: 16px 12px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 20px 0 8px;
+  }
+  .header h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    color: var(--accent2);
+    text-shadow: 0 0 30px rgba(0,229,255,0.6), 0 0 60px rgba(0,229,255,0.2);
+  }
+  .header p {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+
+  /* Panel */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    opacity: 0.5;
+  }
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* GPS Section */
+  .gps-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .data-box {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .data-box label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    display: block;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+  .data-box .value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .data-box .unit {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-left: 3px;
+  }
+
+  /* Status badge */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .status-badge .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+  .status-ok { color: var(--green); border: 1px solid rgba(0,255,157,0.3); background: rgba(0,255,157,0.05); }
+  .status-ok .dot { background: var(--green); box-shadow: var(--glow-green); }
+  .status-warn { color: var(--amber); border: 1px solid rgba(255,184,0,0.3); background: rgba(255,184,0,0.05); }
+  .status-warn .dot { background: var(--amber); animation: none; }
+  .status-err { color: var(--red); border: 1px solid rgba(255,61,107,0.3); background: rgba(255,61,107,0.05); }
+  .status-err .dot { background: var(--red); box-shadow: var(--glow-red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Polar Scope / Bubble Level Visual */
+  .scope-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 8px 0;
+  }
+
+  .polar-scope {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    position: relative;
+    background: radial-gradient(circle, #0a1520 0%, #050810 70%);
+    box-shadow: var(--glow), inset 0 0 30px rgba(0,0,0,0.8);
+    overflow: hidden;
+  }
+
+  /* Reticle circles */
+  .polar-scope::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 50% 50%, transparent 28%, rgba(58,143,255,0.15) 28.5%, transparent 29%),
+      radial-gradient(circle at 50% 50%, transparent 48%, rgba(58,143,255,0.1) 48.5%, transparent 49%),
+      radial-gradient(circle at 50% 50%, transparent 68%, rgba(58,143,255,0.08) 68.5%, transparent 69%);
+  }
+
+  /* Crosshair */
+  .crosshair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  .crosshair::before, .crosshair::after {
+    content: '';
+    position: absolute;
+    background: rgba(58,143,255,0.25);
+  }
+  .crosshair::before { width: 1px; height: 100%; left: 50%; top: 0; }
+  .crosshair::after { height: 1px; width: 100%; top: 50%; left: 0; }
+
+  /* Polaris position indicator */
+  .polaris-dot {
+    position: absolute;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--amber);
+    box-shadow: 0 0 12px var(--amber), 0 0 4px rgba(255,255,255,0.8);
+    transform: translate(-50%, -50%);
+    transition: left 0.3s ease, top 0.3s ease;
+    z-index: 2;
+  }
+  .polaris-dot::after {
+    content: 'α UMi';
+    position: absolute;
+    top: 12px; left: 8px;
+    font-size: 8px;
+    color: var(--amber);
+    white-space: nowrap;
+    letter-spacing: 1px;
+  }
+
+  /* Target center */
+  .target-center {
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent2);
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+  .target-center::before {
+    content: '';
+    position: absolute;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent2);
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px var(--accent2);
+  }
+
+  /* Bubble Level */
+  .level-container {
+    width: 100%;
+  }
+  .level-title {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+  }
+  .levels-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Linear level (horizontal & vertical) */
+  .level-bar {
+    position: relative;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 40px;
+    overflow: hidden;
+  }
+  .level-h { width: 140px; height: 28px; }
+  .level-v { width: 28px; height: 140px; }
+
+  .level-bar-fill {
+    position: absolute;
+    border-radius: 40px;
+    background: var(--green);
+    box-shadow: var(--glow-green);
+    transition: all 0.2s ease;
+  }
+  .level-h .level-bar-fill { height: 100%; }
+  .level-v .level-bar-fill { width: 100%; }
+
+  .level-center-mark {
+    position: absolute;
+    background: rgba(255,255,255,0.4);
+  }
+  .level-h .level-center-mark { width: 1px; height: 100%; left: 50%; }
+  .level-v .level-center-mark { height: 1px; width: 100%; top: 50%; }
+
+  .level-bubble {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(4px);
+    transform: translate(-50%, -50%);
+    transition: left 0.15s ease, top 0.15s ease;
+    z-index: 2;
+    box-shadow: 0 0 8px rgba(255,255,255,0.3);
+  }
+  .level-h .level-bubble { top: 50%; }
+  .level-v .level-bubble { left: 50%; }
+
+  /* 2D bubble level */
+  .bubble-2d {
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.4);
+    border: 2px solid var(--border);
+    position: relative;
+    flex-shrink: 0;
+  }
+  .bubble-2d::before {
+    content: '';
+    position: absolute;
+    inset: 25%;
+    border-radius: 50%;
+    border: 1px solid rgba(58,143,255,0.2);
+  }
+  .bubble-2d-inner {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5), rgba(58,143,255,0.4));
+    border: 1.5px solid rgba(0,229,255,0.8);
+    position: absolute;
+    transform: translate(-50%, -50%);
+    transition: left 0.15s ease, top 0.15s ease;
+    box-shadow: 0 0 12px rgba(0,229,255,0.5);
+  }
+  /* Center target */
+  .bubble-2d::after {
+    content: '';
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    border: 1px solid var(--accent);
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Azimuth Guide */
+  .azimuth-guide {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .compass-rose {
+    width: 120px; height: 120px;
+    position: relative;
+  }
+  .compass-svg {
+    width: 100%; height: 100%;
+  }
+  .compass-needle {
+    transition: transform 0.3s ease;
+    transform-origin: 60px 60px;
+  }
+
+  /* Altitude display */
+  .altitude-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-top: 4px;
+  }
+  .alt-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .alt-info label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+  .alt-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    color: var(--accent2);
+    line-height: 1;
+  }
+  .alt-target {
+    text-align: right;
+  }
+  .alt-target label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 2px;
+  }
+  .alt-target .value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 20px;
+    color: var(--amber);
+  }
+
+  /* ── Guided Correction Wizard ── */
+  .wizard-steps {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+    justify-content: center;
+  }
+  .wstep {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    color: var(--text-dim);
+    position: relative;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .wstep.active {
+    border-color: var(--accent2);
+    color: var(--accent2);
+    box-shadow: 0 0 12px rgba(0,229,255,0.4);
+    background: rgba(0,229,255,0.08);
+  }
+  .wstep.done {
+    border-color: var(--green);
+    background: rgba(0,255,157,0.1);
+    color: var(--green);
+    box-shadow: 0 0 8px rgba(0,255,157,0.3);
+  }
+  .wstep-connector {
+    flex: 1; height: 1px;
+    background: var(--border);
+    align-self: center;
+    max-width: 24px;
+    transition: background 0.4s;
+  }
+  .wstep-connector.done { background: var(--green); }
+
+  .wizard-card {
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s;
+  }
+  .wizard-card.step-active { border-color: rgba(0,229,255,0.4); }
+  .wizard-card.step-done {
+    border-color: rgba(0,255,157,0.35);
+    background: rgba(0,255,157,0.04);
+  }
+
+  .wizard-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .wizard-icon {
+    font-size: 28px;
+    line-height: 1;
+    width: 36px; text-align: center;
+    flex-shrink: 0;
+  }
+  .wizard-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent2);
+    letter-spacing: 1.5px;
+  }
+  .wizard-subtitle {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Big directional arrow */
+  .direction-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .dir-arrow {
+    font-size: 52px;
+    line-height: 1;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 8px currentColor);
+  }
+  .dir-arrow.dir-ok { color: var(--green); }
+  .dir-arrow.dir-warn { color: var(--amber); }
+  .dir-arrow.dir-err { color: var(--red); }
+
+  .dir-values {
+    flex: 1;
+    text-align: center;
+  }
+  .dir-current {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+    transition: color 0.3s;
+  }
+  .dir-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    text-transform: uppercase;
+  }
+  .dir-target {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .dir-target span {
+    color: var(--amber);
+    font-family: 'Orbitron', sans-serif;
+  }
+
+  /* Instruction text */
+  .instr-text {
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    background: rgba(58,143,255,0.05);
+    border-left: 2px solid var(--accent);
+    padding: 8px 10px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 10px;
+    transition: all 0.3s;
+  }
+  .instr-text.ok {
+    border-left-color: var(--green);
+    background: rgba(0,255,157,0.05);
+    color: var(--green);
+  }
+
+  /* Tolerance bar */
+  .tol-bar-wrap {
+    margin-bottom: 8px;
+  }
+  .tol-bar-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .tol-bar {
+    height: 8px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: visible;
+  }
+  .tol-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease, background 0.3s ease;
+  }
+  .tol-marker {
+    position: absolute;
+    top: -3px; bottom: -3px;
+    width: 3px;
+    background: var(--amber);
+    border-radius: 2px;
+    left: 85%;
+    opacity: 0.6;
+  }
+
+  /* Step nav buttons */
+  .step-nav {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .btn-nav {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+    color: var(--text-dim);
+  }
+  .btn-nav:active { transform: scale(0.97); }
+  .btn-nav.primary {
+    border-color: var(--accent);
+    color: var(--accent2);
+    background: rgba(58,143,255,0.1);
+  }
+  .btn-nav.success {
+    border-color: var(--green);
+    color: var(--green);
+    background: rgba(0,255,157,0.1);
+    box-shadow: var(--glow-green);
+  }
+
+  /* Done overlay */
+  .done-overlay {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0 4px;
+    text-align: center;
+  }
+  .done-overlay.visible { display: flex; }
+  .done-star {
+    font-size: 48px;
+    animation: spin-in 0.6s cubic-bezier(0.175,0.885,0.32,1.275) forwards;
+  }
+  @keyframes spin-in {
+    from { transform: scale(0) rotate(-180deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+  }
+  .done-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 14px;
+    font-weight: 900;
+    color: var(--green);
+    letter-spacing: 3px;
+    text-shadow: var(--glow-green);
+  }
+  .done-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 1.5px;
+  }
+
+  /* Mini summary chips */
+  .summary-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .chip {
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    border: 1px solid rgba(0,255,157,0.3);
+    color: var(--green);
+    background: rgba(0,255,157,0.06);
+  }
+  .chip.pending {
+    border-color: var(--border);
+    color: var(--text-dim);
+    background: transparent;
+  }
+
+  /* pulse-glow on active step icon */
+  @keyframes icon-glow {
+    0%, 100% { filter: drop-shadow(0 0 4px var(--accent2)); }
+    50% { filter: drop-shadow(0 0 14px var(--accent2)); }
+  }
+  .wizard-icon.pulsing { animation: icon-glow 2s infinite; }
+
+  /* Correction arrows (keep for legacy compat) */
+  .corr-pos { color: var(--green); }
+  .corr-neg { color: var(--red); }
+  .corr-ok  { color: var(--accent2); }
+
+  /* Progress / Precision indicator */
+  .precision-meter {
+    margin-top: 6px;
+  }
+  .precision-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .precision-bar {
+    height: 6px;
+    background: rgba(0,0,0,0.4);
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .precision-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease, background 0.5s ease;
+  }
+
+  /* CTA Button */
+  .btn-start {
+    width: 100%;
+    padding: 16px;
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    background: rgba(58,143,255,0.1);
+    color: var(--accent2);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: var(--glow);
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-start:active {
+    transform: scale(0.98);
+    background: rgba(58,143,255,0.2);
+  }
+  .btn-start::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(58,143,255,0.1) 100%);
+  }
+  .btn-start.active {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(255,61,107,0.1);
+    box-shadow: var(--glow-red);
+  }
+
+  /* Info note */
+  .info-note {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    line-height: 1.6;
+    padding: 0 8px;
+  }
+
+  /* Separator */
+  .sep {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 2px 0;
+  }
+
+  /* Shimmer anim for loading */
+  @keyframes shimmer {
+    0% { opacity: 0.4; }
+    50% { opacity: 1; }
+    100% { opacity: 0.4; }
+  }
+  .loading { animation: shimmer 1.2s infinite; }
+
+  /* Responsive adjustments */
+  @media (max-width: 380px) {
+    .polar-scope { width: 170px; height: 170px; }
+    .alt-value { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>POLAR ALIGN</h1>
+    <p>Mise en station monture équatoriale</p>
+  </div>
+
+  <!-- GPS Panel -->
+  <div class="panel">
+    <div class="panel-title">📍 Localisation GPS</div>
+    <div class="gps-grid">
+      <div class="data-box">
+        <label>Latitude</label>
+        <span class="value" id="lat-val">--°--'--"</span>
+      </div>
+      <div class="data-box">
+        <label>Longitude</label>
+        <span class="value" id="lng-val">--°--'--"</span>
+      </div>
+      <div class="data-box">
+        <label>Altitude site</label>
+        <span class="value" id="elev-val">---</span><span class="unit">m</span>
+      </div>
+      <div class="data-box">
+        <label>Précision GPS</label>
+        <span class="value" id="acc-val">---</span><span class="unit">m</span>
+      </div>
+    </div>
+    <div id="gps-status" class="status-badge status-warn">
+      <div class="dot"></div>
+      En attente du GPS
+    </div>
+  </div>
+
+  <!-- Niveau / Horizontalité -->
+  <div class="panel">
+    <div class="panel-title">⚖️ Horizontalité de la monture</div>
+    <div class="scope-container">
+      <div class="bubble-2d" id="bubble2d">
+        <div class="bubble-2d-inner" id="bubble2d-inner" style="left:50%;top:50%;"></div>
+      </div>
+      <div class="levels-row">
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px">N-S</div>
+          <div class="level-bar level-v">
+            <div class="level-center-mark"></div>
+            <div class="level-bubble" id="bubble-ns" style="top:50%"></div>
+          </div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:4px">E-O</div>
+          <div class="level-bar level-h">
+            <div class="level-center-mark"></div>
+            <div class="level-bubble" id="bubble-eo" style="left:50%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sep"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+      <div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:3px">INCLINAISON N-S</div>
+        <span style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--accent2)" id="tilt-ns">0.0°</span>
+      </div>
+      <div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:3px">INCLINAISON E-O</div>
+        <span style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--accent2)" id="tilt-eo">0.0°</span>
+      </div>
+      <div id="level-status" class="status-badge status-warn">
+        <div class="dot"></div>
+        Hors niveau
+      </div>
+    </div>
+  </div>
+
+  <!-- Altitude polaire -->
+  <div class="panel">
+    <div class="panel-title">🌟 Altitude polaire (axe A.R.)</div>
+
+    <div class="altitude-display">
+      <div class="alt-info">
+        <label>Altitude actuelle</label>
+        <div class="alt-value" id="alt-current">--.-°</div>
+      </div>
+      <div style="font-size:28px;color:var(--text-dim)">→</div>
+      <div class="alt-target">
+        <label>Cible (= latitude)</label>
+        <div class="value" id="alt-target-val">--.-°</div>
+      </div>
+    </div>
+
+    <div class="precision-meter" style="margin-top:10px">
+      <div class="precision-label">
+        <span>Erreur altitude</span>
+        <span id="alt-error">---</span>
+      </div>
+      <div class="precision-bar">
+        <div class="precision-fill" id="alt-prec-bar" style="width:0%;background:var(--red)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Azimuth -->
+  <div class="panel">
+    <div class="panel-title">🧭 Azimut — Pointage vers le Nord</div>
+    <div style="display:flex;align-items:center;gap:16px">
+      <div class="azimuth-guide">
+        <svg class="compass-svg" viewBox="0 0 120 120" width="100" height="100">
+          <!-- Compass ring -->
+          <circle cx="60" cy="60" r="55" fill="rgba(0,0,0,0.3)" stroke="rgba(80,160,255,0.2)" stroke-width="1"/>
+          <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(80,160,255,0.1)" stroke-width="1"/>
+          <!-- Cardinal points -->
+          <text x="60" y="16" text-anchor="middle" fill="var(--accent2)" font-family="Orbitron" font-size="10" font-weight="700">N</text>
+          <text x="106" y="64" text-anchor="middle" fill="var(--text-dim)" font-family="Orbitron" font-size="9">E</text>
+          <text x="60" y="110" text-anchor="middle" fill="var(--text-dim)" font-family="Orbitron" font-size="9">S</text>
+          <text x="14" y="64" text-anchor="middle" fill="var(--text-dim)" font-family="Orbitron" font-size="9">O</text>
+          <!-- Tick marks -->
+          <line x1="60" y1="8" x2="60" y2="16" stroke="var(--accent2)" stroke-width="2"/>
+          <line x1="60" y1="104" x2="60" y2="112" stroke="var(--text-dim)" stroke-width="1"/>
+          <line x1="8" y1="60" x2="16" y2="60" stroke="var(--text-dim)" stroke-width="1"/>
+          <line x1="104" y1="60" x2="112" y2="60" stroke="var(--text-dim)" stroke-width="1"/>
+          <!-- Needle group -->
+          <g id="compass-needle">
+            <polygon points="60,14 63,60 60,66 57,60" fill="var(--accent2)" opacity="0.9"/>
+            <polygon points="60,66 63,60 60,106 57,60" fill="rgba(80,160,255,0.3)"/>
+            <circle cx="60" cy="60" r="4" fill="var(--accent)" stroke="white" stroke-width="1"/>
+          </g>
+        </svg>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:4px">AZIMUT ACTUEL</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:24px;font-weight:900;color:var(--accent2)" id="azimuth-val">---°</div>
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-top:8px;margin-bottom:4px">CORRECTION</div>
+        <div style="font-family:'Orbitron',sans-serif;font-size:14px" id="azimuth-corr">---</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Polaris dans viseur -->
+  <div class="panel">
+    <div class="panel-title">🔭 Position de Polaris dans le chercheur polaire</div>
+    <div style="display:flex;align-items:center;gap:16px;justify-content:center">
+      <div class="polar-scope">
+        <div class="crosshair"></div>
+        <div class="target-center"></div>
+        <div class="polaris-dot" id="polaris-dot" style="left:50%;top:50%"></div>
+      </div>
+      <div style="flex:1;max-width:140px">
+        <div style="margin-bottom:10px">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:3px">ANGLE HORAIRE</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--amber)" id="ha-val">--h --m</div>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:3px">HEURE LOCALE</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--text)" id="time-val">--:--:--</div>
+        </div>
+        <div>
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim);margin-bottom:3px">TEMPS SIDÉRAL</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:14px;color:var(--text)" id="lst-val">--h --m</div>
+        </div>
+      </div>
+    </div>
+    <div class="precision-meter" style="margin-top:10px">
+      <div class="precision-label">
+        <span>Précision globale</span>
+        <span id="global-prec-label">---</span>
+      </div>
+      <div class="precision-bar">
+        <div class="precision-fill" id="global-prec-bar" style="width:0%;background:var(--red)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Guided Correction Wizard -->
+  <div class="panel" id="wizard-panel">
+    <div class="panel-title">🎯 Assistant de mise en station</div>
+
+    <!-- Step indicators -->
+    <div class="wizard-steps">
+      <div class="wstep active" id="ws0" onclick="goStep(0)">1</div>
+      <div class="wstep-connector" id="wc0"></div>
+      <div class="wstep" id="ws1" onclick="goStep(1)">2</div>
+      <div class="wstep-connector" id="wc1"></div>
+      <div class="wstep" id="ws2" onclick="goStep(2)">3</div>
+      <div class="wstep-connector" id="wc2"></div>
+      <div class="wstep" id="ws3" onclick="goStep(3)">4</div>
+    </div>
+
+    <!-- Step 0: Niveau E-O -->
+    <div class="wizard-card step-active" id="card0">
+      <div class="wizard-header">
+        <div class="wizard-icon pulsing" id="icon0">⚖️</div>
+        <div>
+          <div class="wizard-title">ÉTAPE 1 — NIVEAU E-O</div>
+          <div class="wizard-subtitle">Vis calantes Est / Ouest</div>
+        </div>
+      </div>
+      <div class="direction-display">
+        <div class="dir-arrow dir-err" id="arr-eo">◀</div>
+        <div class="dir-values">
+          <div class="dir-current" id="dv-eo" style="color:var(--red)">+2.0°</div>
+          <div class="dir-label">inclinaison E-O</div>
+          <div class="dir-target">Cible : <span>0.0°</span> ± 0.2°</div>
+        </div>
+      </div>
+      <div class="tol-bar-wrap">
+        <div class="tol-bar-labels"><span>−5°</span><span>Centre</span><span>+5°</span></div>
+        <div class="tol-bar"><div class="tol-bar-fill" id="tb-eo" style="width:50%"></div><div class="tol-marker"></div></div>
+      </div>
+      <div class="instr-text" id="instr-eo">Agissez sur les vis calantes <strong>Est/Ouest</strong> pour ramener la bulle au centre.</div>
+      <div class="step-nav">
+        <button class="btn-nav" onclick="goStep(1)">Passer →</button>
+        <button class="btn-nav primary" id="btn-val-eo" onclick="validateStep(0)">Valider ✓</button>
+      </div>
+    </div>
+
+    <!-- Step 1: Niveau N-S -->
+    <div class="wizard-card" id="card1" style="display:none">
+      <div class="wizard-header">
+        <div class="wizard-icon" id="icon1">⚖️</div>
+        <div>
+          <div class="wizard-title">ÉTAPE 2 — NIVEAU N-S</div>
+          <div class="wizard-subtitle">Vis calante Nord / Sud</div>
+        </div>
+      </div>
+      <div class="direction-display">
+        <div class="dir-arrow dir-err" id="arr-ns">▲</div>
+        <div class="dir-values">
+          <div class="dir-current" id="dv-ns" style="color:var(--red)">+1.5°</div>
+          <div class="dir-label">inclinaison N-S</div>
+          <div class="dir-target">Cible : <span>0.0°</span> ± 0.2°</div>
+        </div>
+      </div>
+      <div class="tol-bar-wrap">
+        <div class="tol-bar-labels"><span>−5°</span><span>Centre</span><span>+5°</span></div>
+        <div class="tol-bar"><div class="tol-bar-fill" id="tb-ns" style="width:50%"></div><div class="tol-marker"></div></div>
+      </div>
+      <div class="instr-text" id="instr-ns">Agissez sur la vis calante <strong>Nord/Sud</strong> pour horizontaliser la monture.</div>
+      <div class="step-nav">
+        <button class="btn-nav" onclick="goStep(0)">← Retour</button>
+        <button class="btn-nav primary" id="btn-val-ns" onclick="validateStep(1)">Valider ✓</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Altitude polaire -->
+    <div class="wizard-card" id="card2" style="display:none">
+      <div class="wizard-header">
+        <div class="wizard-icon" id="icon2">🌟</div>
+        <div>
+          <div class="wizard-title">ÉTAPE 3 — ALTITUDE POLAIRE</div>
+          <div class="wizard-subtitle">Vis d'élévation de l'axe A.R.</div>
+        </div>
+      </div>
+      <div class="direction-display">
+        <div class="dir-arrow dir-warn" id="arr-alt">▲</div>
+        <div class="dir-values">
+          <div class="dir-current" id="dv-alt" style="color:var(--amber)">45.0°</div>
+          <div class="dir-label">altitude actuelle</div>
+          <div class="dir-target">Cible latitude : <span id="dv-alt-target">--.-°</span></div>
+        </div>
+      </div>
+      <div class="tol-bar-wrap">
+        <div class="tol-bar-labels"><span>−5°</span><span>Cible</span><span>+5°</span></div>
+        <div class="tol-bar"><div class="tol-bar-fill" id="tb-alt" style="width:50%"></div><div class="tol-marker"></div></div>
+      </div>
+      <div class="instr-text" id="instr-alt">Réglez la vis d'élévation de l'axe polaire. Posez l'iPhone le long de l'axe A.R. pour mesurer l'angle.</div>
+      <div class="step-nav">
+        <button class="btn-nav" onclick="goStep(1)">← Retour</button>
+        <button class="btn-nav primary" id="btn-val-alt" onclick="validateStep(2)">Valider ✓</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Azimut -->
+    <div class="wizard-card" id="card3" style="display:none">
+      <div class="wizard-header">
+        <div class="wizard-icon" id="icon3">🧭</div>
+        <div>
+          <div class="wizard-title">ÉTAPE 4 — AZIMUT NORD</div>
+          <div class="wizard-subtitle">Rotation en azimut de la monture</div>
+        </div>
+      </div>
+      <div class="direction-display">
+        <div class="dir-arrow dir-warn" id="arr-az">◀</div>
+        <div class="dir-values">
+          <div class="dir-current" id="dv-az" style="color:var(--amber)">45.0°</div>
+          <div class="dir-label">azimut actuel</div>
+          <div class="dir-target">Cible : <span>0° (Nord)</span> ± 0.5°</div>
+        </div>
+      </div>
+      <div class="tol-bar-wrap">
+        <div class="tol-bar-labels"><span>O −10°</span><span>Nord 0°</span><span>+10° E</span></div>
+        <div class="tol-bar"><div class="tol-bar-fill" id="tb-az" style="width:50%"></div><div class="tol-marker"></div></div>
+      </div>
+      <div class="instr-text" id="instr-az">Faites pivoter la monture en azimut pour pointer l'axe A.R. vers le <strong>Nord céleste</strong>.</div>
+      <div class="step-nav">
+        <button class="btn-nav" onclick="goStep(2)">← Retour</button>
+        <button class="btn-nav primary" id="btn-val-az" onclick="validateStep(3)">Valider ✓</button>
+      </div>
+    </div>
+
+    <!-- Done screen -->
+    <div class="done-overlay" id="done-screen">
+      <div class="done-star">⭐</div>
+      <div class="done-title">MISE EN STATION OK</div>
+      <div class="done-sub">Toutes les corrections ont été appliquées</div>
+      <div class="summary-chips" id="done-chips"></div>
+      <div class="step-nav" style="width:100%;margin-top:6px">
+        <button class="btn-nav primary" onclick="resetWizard()">↺ Recommencer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Start button -->
+  <button class="btn-start" id="btn-start" onclick="toggleSensors()">
+    ▶ DÉMARRER LES CAPTEURS
+  </button>
+
+  <p class="info-note">
+    Autorisez l'accès au GPS et aux capteurs de mouvement.<br>
+    Posez l'iPhone à plat sur la monture pour le niveau,<br>
+    puis en position verticale pour l'azimut et l'altitude.
+  </p>
+
+</div>
+
+<script>
+// ─── State ───────────────────────────────────────────────────────
+let running = false;
+let watchId = null;
+let lat = null, lng = null, elevation = null;
+
+// Raw sensor values (set by events / simulation)
+let _rawNS = 0, _rawEO = 0, _rawHeading = 0, _rawAlt = 45;
+
+// Smoothed values — what the UI actually reads
+let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
+
+// ─── Low-Pass Filter (Exponential Moving Average) ────────────────
+// alpha: 0 = very smooth/slow, 1 = no filtering
+// For level/tilt: high smoothing (slow gestures)
+// For heading/compass: moderate (can move faster)
+const ALPHA_LEVEL   = 0.05;  // very smooth — monture quasi-statique
+const ALPHA_HEADING = 0.08;  // un peu plus réactif
+
+function lpf(prev, raw, alpha) {
+  return prev + alpha * (raw - prev);
+}
+
+// Circular low-pass for heading (handles 359°→1° wrap-around)
+function lpfAngle(prev, raw, alpha) {
+  let diff = raw - prev;
+  if (diff > 180)  diff -= 360;
+  if (diff < -180) diff += 360;
+  return (prev + alpha * diff + 360) % 360;
+}
+
+// ─── Throttled UI render loop (60 fps cap) ───────────────────────
+let _uiPending = false;
+function scheduleUI() {
+  if (_uiPending) return;
+  _uiPending = true;
+  requestAnimationFrame(() => {
+    _uiPending = false;
+    // Apply filter step
+    tiltNS        = lpf(tiltNS,        _rawNS,      ALPHA_LEVEL);
+    tiltEO        = lpf(tiltEO,        _rawEO,      ALPHA_LEVEL);
+    heading       = lpfAngle(heading,  _rawHeading, ALPHA_HEADING);
+    deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
+    // Render
+    updateLevelUI();
+    updateAltitudeUI();
+    updateAzimuthUI();
+    updateCorrections();
+    updateWizard();
+  });
+}
+
+// Polaris constants
+const POLARIS_RA = 2.5303; // hours
+const POLARIS_DEC = 89.2641; // degrees
+const POLARIS_OFFSET = 0.7359; // degrees from true pole
+
+// ─── Helpers ─────────────────────────────────────────────────────
+function dms(deg) {
+  const d = Math.floor(Math.abs(deg));
+  const m = Math.floor((Math.abs(deg) - d) * 60);
+  const s = Math.floor(((Math.abs(deg) - d) * 60 - m) * 60);
+  const sign = deg < 0 ? '-' : '';
+  return `${sign}${d}°${String(m).padStart(2,'0')}'${String(s).padStart(2,'0')}"`;
+}
+
+function toRad(d) { return d * Math.PI / 180; }
+function toDeg(r) { return r * 180 / Math.PI; }
+
+// Local Sidereal Time
+function getLST(longitude) {
+  const now = new Date();
+  const J2000 = 2451545.0;
+  const JD = (now.getTime() / 86400000) + 2440587.5;
+  const T = (JD - J2000) / 36525;
+  const GMST = 280.46061837 + 360.98564736629 * (JD - J2000) + T * T * 0.000387933 - T * T * T / 38710000;
+  const LST = ((GMST + longitude) % 360 + 360) % 360;
+  return LST / 15; // in hours
+}
+
+function hoursToHM(h) {
+  const hh = Math.floor(h);
+  const mm = Math.floor((h - hh) * 60);
+  return `${String(hh).padStart(2,'0')}h ${String(mm).padStart(2,'0')}m`;
+}
+
+// Polaris hour angle
+function getPolarisHA(longitude) {
+  const lst = getLST(longitude);
+  let ha = lst - POLARIS_RA;
+  if (ha < 0) ha += 24;
+  if (ha >= 24) ha -= 24;
+  return ha;
+}
+
+// Position of Polaris in polar scope (relative to true pole)
+// Returns {x, y} in [-1, 1] (scope coordinates)
+function getPolarisPosition(ha) {
+  const haRad = toRad(ha * 15); // HA in degrees
+  const r = 0.55; // normalized radius (Polaris is ~0.74° from pole, scope shows ~2.5°)
+  const x = r * Math.sin(haRad);
+  const y = -r * Math.cos(haRad);
+  return { x, y };
+}
+
+// ─── Update UI ───────────────────────────────────────────────────
+function updateGPS(position) {
+  lat = position.coords.latitude;
+  lng = position.coords.longitude;
+  elevation = position.coords.altitude;
+  const acc = position.coords.accuracy;
+
+  document.getElementById('lat-val').textContent = dms(lat) + (lat >= 0 ? ' N' : ' S');
+  document.getElementById('lng-val').textContent = dms(Math.abs(lng)) + (lng >= 0 ? ' E' : ' O');
+  document.getElementById('elev-val').textContent = elevation ? Math.round(elevation) : '---';
+  document.getElementById('acc-val').textContent = Math.round(acc);
+
+  const st = document.getElementById('gps-status');
+  if (acc < 30) {
+    st.className = 'status-badge status-ok';
+    st.innerHTML = '<div class="dot"></div> GPS acquis';
+  } else {
+    st.className = 'status-badge status-warn';
+    st.innerHTML = '<div class="dot"></div> GPS imprécis…';
+  }
+
+  // Update altitude target
+  document.getElementById('alt-target-val').textContent = lat.toFixed(2) + '°';
+  updatePolarisDisplay();
+  updateCorrections();
+  updateWizard();
+}
+
+function updateOrientation(event) {
+  if (event.beta !== null)  { _rawNS = event.beta;  _rawEO = event.gamma; }
+  if (event.alpha !== null) { _rawHeading = event.alpha; }
+  // Derive RA-axis altitude: when device held vertically (|beta|>45), pitch = 90-|beta|
+  _rawAlt = Math.abs(_rawNS) > 45 ? (90 - Math.abs(_rawNS)) : _rawNS;
+  scheduleUI();
+}
+
+function updateLevelUI() {
+  // Clamp to ±10° for bubble display
+  const ns = Math.max(-10, Math.min(10, tiltNS));
+  const eo = Math.max(-10, Math.min(10, tiltEO));
+
+  // NS: vertical bar, bubble top = tilt negative (tilted back)
+  const nsPos = 50 + (ns / 10) * 40; // 50% center
+  document.getElementById('bubble-ns').style.top = nsPos + '%';
+
+  // EO: horizontal bar
+  const eoPos = 50 + (eo / 10) * 40;
+  document.getElementById('bubble-eo').style.left = eoPos + '%';
+
+  // 2D bubble
+  const bx = 50 + (eo / 10) * 35;
+  const by = 50 + (ns / 10) * 35;
+  const b = document.getElementById('bubble2d-inner');
+  b.style.left = Math.max(15, Math.min(85, bx)) + '%';
+  b.style.top = Math.max(15, Math.min(85, by)) + '%';
+
+  document.getElementById('tilt-ns').textContent = tiltNS.toFixed(1) + '°';
+  document.getElementById('tilt-eo').textContent = tiltEO.toFixed(1) + '°';
+
+  const levelOK = Math.abs(tiltNS) < 0.5 && Math.abs(tiltEO) < 0.5;
+  const levelGood = Math.abs(tiltNS) < 0.2 && Math.abs(tiltEO) < 0.2;
+  const st = document.getElementById('level-status');
+  if (levelGood) {
+    st.className = 'status-badge status-ok';
+    st.innerHTML = '<div class="dot"></div> Horizontal ✓';
+  } else if (levelOK) {
+    st.className = 'status-badge status-warn';
+    st.innerHTML = '<div class="dot"></div> Quasi-niveau';
+  } else {
+    st.className = 'status-badge status-err';
+    st.innerHTML = '<div class="dot"></div> Hors niveau';
+  }
+}
+
+function updateAltitudeUI() {
+  if (lat === null) return;
+  const currentAlt = deviceAltitude;
+  const err = currentAlt - lat;
+
+  document.getElementById('alt-current').textContent = currentAlt.toFixed(1) + '°';
+  document.getElementById('alt-error').textContent = (err >= 0 ? '+' : '') + err.toFixed(2) + '°';
+
+  const maxErr = 5;
+  const prec = Math.max(0, 100 - (Math.abs(err) / maxErr) * 100);
+  const bar = document.getElementById('alt-prec-bar');
+  bar.style.width = prec + '%';
+  bar.style.background = prec > 80 ? 'var(--green)' : prec > 50 ? 'var(--amber)' : 'var(--red)';
+}
+
+function updateAzimuthUI() {
+  // heading 0 = North
+  const az = ((heading % 360) + 360) % 360;
+  document.getElementById('azimuth-val').textContent = az.toFixed(1) + '°';
+
+  // Rotate compass needle (needle points to N, so rotate by -az)
+  document.getElementById('compass-needle').style.transform = `rotate(${az}deg)`;
+  document.getElementById('compass-needle').style.transformOrigin = '60px 60px';
+
+  const diff = az > 180 ? az - 360 : az;
+  const corrEl = document.getElementById('azimuth-corr');
+  if (Math.abs(diff) < 0.5) {
+    corrEl.textContent = '✓ Pointé vers le Nord';
+    corrEl.style.color = 'var(--green)';
+  } else if (diff > 0) {
+    corrEl.textContent = `← Tourner ${diff.toFixed(1)}° à gauche`;
+    corrEl.style.color = 'var(--amber)';
+  } else {
+    corrEl.textContent = `→ Tourner ${Math.abs(diff).toFixed(1)}° à droite`;
+    corrEl.style.color = 'var(--amber)';
+  }
+}
+
+function updatePolarisDisplay() {
+  if (lng === null) return;
+  const ha = getPolarisHA(lng);
+  const pos = getPolarisPosition(ha);
+
+  const scope = document.querySelector('.polar-scope');
+  const r = scope.offsetWidth / 2;
+  const cx = r + pos.x * r * 0.85;
+  const cy = r + pos.y * r * 0.85;
+
+  document.getElementById('polaris-dot').style.left = cx + 'px';
+  document.getElementById('polaris-dot').style.top = cy + 'px';
+  document.getElementById('ha-val').textContent = hoursToHM(ha);
+  document.getElementById('lst-val').textContent = hoursToHM(getLST(lng));
+
+  // Global precision
+  const altErr = lat !== null ? Math.abs(deviceAltitude - lat) : 5;
+  const azErr = Math.abs(heading > 180 ? heading - 360 : heading);
+  const levelErr = Math.sqrt(tiltNS * tiltNS + tiltEO * tiltEO);
+  const totalErr = (altErr / 5 + azErr / 10 + levelErr / 2) / 3;
+  const prec = Math.max(0, Math.min(100, 100 - totalErr * 100));
+  document.getElementById('global-prec-bar').style.width = prec + '%';
+  document.getElementById('global-prec-bar').style.background =
+    prec > 80 ? 'var(--green)' : prec > 50 ? 'var(--amber)' : 'var(--red)';
+  document.getElementById('global-prec-label').textContent = prec.toFixed(0) + '%';
+}
+
+function updateClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2,'0');
+  const mm = String(now.getMinutes()).padStart(2,'0');
+  const ss = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('time-val').textContent = `${hh}:${mm}:${ss}`;
+}
+
+function updateCorrections() {
+  if (lat === null) return;
+  updateWizard();
+}
+
+// ─── Guided Wizard ───────────────────────────────────────────────
+let currentStep = 0;
+const stepsDone = [false, false, false, false];
+
+// Tolerance thresholds (degrees)
+const TOL = { level: 0.2, alt: 0.3, az: 0.5 };
+
+function wizardValues() {
+  const eoErr  = tiltEO;
+  const nsErr  = tiltNS;
+  const altErr = lat !== null ? ((Math.abs(tiltNS) > 45 ? (90 - Math.abs(tiltNS)) : tiltNS) - lat) : null;
+  const azDiff = ((heading % 360) + 360) % 360;
+  const azErr  = azDiff > 180 ? azDiff - 360 : azDiff;
+  return { eoErr, nsErr, altErr, azErr };
+}
+
+function updateWizard() {
+  const v = wizardValues();
+  updateStepEO(v.eoErr);
+  updateStepNS(v.nsErr);
+  updateStepAlt(v.altErr);
+  updateStepAz(v.azErr);
+  refreshStepIndicators();
+}
+
+// ── Colour helper ──
+function errColor(absVal, tol) {
+  if (absVal <= tol)      return 'var(--green)';
+  if (absVal <= tol * 3)  return 'var(--amber)';
+  return 'var(--red)';
+}
+function arrowClass(absVal, tol) {
+  if (absVal <= tol)      return 'dir-ok';
+  if (absVal <= tol * 3)  return 'dir-warn';
+  return 'dir-err';
+}
+
+// ── Tolerance bar (−max to +max mapped to 0–100%) ──
+function setTolBar(id, val, maxRange) {
+  const pct = 50 + (val / maxRange) * 50;
+  const clamped = Math.max(2, Math.min(98, pct));
+  const el = document.getElementById(id);
+  el.style.width = clamped + '%';
+  const abs = Math.abs(val);
+  const tol = maxRange * 0.04; // ~2% of range = tolerance zone
+  el.style.background = abs <= tol * 5 ? 'var(--green)' : abs <= tol * 15 ? 'var(--amber)' : 'var(--red)';
+}
+
+// ── Step 0: E-O ──
+function updateStepEO(v) {
+  if (v === null) return;
+  const abs = Math.abs(v);
+  const ok  = abs <= TOL.level;
+  document.getElementById('dv-eo').textContent = (v >= 0 ? '+' : '') + v.toFixed(2) + '°';
+  document.getElementById('dv-eo').style.color = errColor(abs, TOL.level);
+  setTolBar('tb-eo', v, 5);
+
+  const arr = document.getElementById('arr-eo');
+  arr.className = 'dir-arrow ' + arrowClass(abs, TOL.level);
+  if (ok) {
+    arr.textContent = '✓';
+    document.getElementById('instr-eo').textContent = '✓ Niveau E-O atteint — bonne horizontalité Est/Ouest.';
+    document.getElementById('instr-eo').className = 'instr-text ok';
+    document.getElementById('btn-val-eo').className = 'btn-nav success';
+  } else {
+    arr.textContent = v > 0 ? '◀' : '▶';
+    document.getElementById('instr-eo').innerHTML = v > 0
+      ? 'Tournez la vis calante <strong>Ouest</strong> dans le sens horaire (ou Est en sens antihoraire).'
+      : 'Tournez la vis calante <strong>Est</strong> dans le sens horaire (ou Ouest en sens antihoraire).';
+    document.getElementById('instr-eo').className = 'instr-text';
+    document.getElementById('btn-val-eo').className = 'btn-nav primary';
+  }
+  // Auto-validate silently
+  if (ok && !stepsDone[0]) { stepsDone[0] = true; refreshStepIndicators(); }
+}
+
+// ── Step 1: N-S ──
+function updateStepNS(v) {
+  if (v === null) return;
+  const abs = Math.abs(v);
+  const ok  = abs <= TOL.level;
+  document.getElementById('dv-ns').textContent = (v >= 0 ? '+' : '') + v.toFixed(2) + '°';
+  document.getElementById('dv-ns').style.color = errColor(abs, TOL.level);
+  setTolBar('tb-ns', v, 5);
+
+  const arr = document.getElementById('arr-ns');
+  arr.className = 'dir-arrow ' + arrowClass(abs, TOL.level);
+  if (ok) {
+    arr.textContent = '✓';
+    document.getElementById('instr-ns').textContent = '✓ Niveau N-S atteint — bonne horizontalité Nord/Sud.';
+    document.getElementById('instr-ns').className = 'instr-text ok';
+    document.getElementById('btn-val-ns').className = 'btn-nav success';
+  } else {
+    arr.textContent = v > 0 ? '▲' : '▼';
+    document.getElementById('instr-ns').innerHTML = v > 0
+      ? 'Tournez la vis calante <strong>Nord</strong> dans le sens antihoraire pour abaisser l\'avant.'
+      : 'Tournez la vis calante <strong>Sud</strong> dans le sens antihoraire pour abaisser l\'arrière.';
+    document.getElementById('instr-ns').className = 'instr-text';
+    document.getElementById('btn-val-ns').className = 'btn-nav primary';
+  }
+  if (ok && !stepsDone[1]) { stepsDone[1] = true; refreshStepIndicators(); }
+}
+
+// ── Step 2: Altitude ──
+function updateStepAlt(v) {
+  if (v === null || lat === null) return;
+  const currentAlt = deviceAltitude;
+  const abs = Math.abs(v);
+  const ok  = abs <= TOL.alt;
+  document.getElementById('dv-alt').textContent = currentAlt.toFixed(1) + '°';
+  document.getElementById('dv-alt').style.color = errColor(abs, TOL.alt);
+  document.getElementById('dv-alt-target').textContent = lat.toFixed(2) + '°';
+  setTolBar('tb-alt', v, 5);
+
+  const arr = document.getElementById('arr-alt');
+  arr.className = 'dir-arrow ' + arrowClass(abs, TOL.alt);
+  if (ok) {
+    arr.textContent = '✓';
+    document.getElementById('instr-alt').textContent = '✓ Altitude polaire correcte — axe A.R. bien incliné.';
+    document.getElementById('instr-alt').className = 'instr-text ok';
+    document.getElementById('btn-val-alt').className = 'btn-nav success';
+  } else {
+    arr.textContent = v > 0 ? '▼' : '▲';
+    document.getElementById('instr-alt').innerHTML = v > 0
+      ? `Desserrez la vis d'élévation et <strong>abaissez</strong> l'axe polaire de ${abs.toFixed(2)}°.`
+      : `Desserrez la vis d'élévation et <strong>relevez</strong> l'axe polaire de ${abs.toFixed(2)}°.`;
+    document.getElementById('instr-alt').className = 'instr-text';
+    document.getElementById('btn-val-alt').className = 'btn-nav primary';
+  }
+  if (ok && !stepsDone[2]) { stepsDone[2] = true; refreshStepIndicators(); }
+}
+
+// ── Step 3: Azimut ──
+function updateStepAz(v) {
+  if (v === null) return;
+  const azDisplay = (((heading % 360) + 360) % 360).toFixed(1);
+  const abs = Math.abs(v);
+  const ok  = abs <= TOL.az;
+  document.getElementById('dv-az').textContent = azDisplay + '°';
+  document.getElementById('dv-az').style.color = errColor(abs, TOL.az);
+  setTolBar('tb-az', v, 10);
+
+  const arr = document.getElementById('arr-az');
+  arr.className = 'dir-arrow ' + arrowClass(abs, TOL.az);
+  if (ok) {
+    arr.textContent = '✓';
+    document.getElementById('instr-az').textContent = '✓ Axe A.R. pointé vers le Nord céleste.';
+    document.getElementById('instr-az').className = 'instr-text ok';
+    document.getElementById('btn-val-az').className = 'btn-nav success';
+  } else {
+    arr.textContent = v > 0 ? '◀' : '▶';
+    document.getElementById('instr-az').innerHTML = v > 0
+      ? `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la gauche</strong> (sens antihoraire vu d'en haut).`
+      : `Faites pivoter la monture de <strong>${abs.toFixed(1)}° vers la droite</strong> (sens horaire vu d'en haut).`;
+    document.getElementById('instr-az').className = 'instr-text';
+    document.getElementById('btn-val-az').className = 'btn-nav primary';
+  }
+  if (ok && !stepsDone[3]) { stepsDone[3] = true; refreshStepIndicators(); }
+}
+
+// ── Step navigation ──
+function goStep(n) {
+  // hide all cards
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('card' + i).style.display = 'none';
+    document.getElementById('card' + i).className = 'wizard-card';
+  }
+  document.getElementById('done-screen').className = 'done-overlay';
+  currentStep = n;
+  const card = document.getElementById('card' + n);
+  card.style.display = 'block';
+  card.className = 'wizard-card step-active';
+  document.getElementById('icon' + n).classList.add('pulsing');
+  refreshStepIndicators();
+}
+
+function validateStep(n) {
+  stepsDone[n] = true;
+  refreshStepIndicators();
+  if (n < 3) {
+    goStep(n + 1);
+  } else {
+    showDone();
+  }
+}
+
+function refreshStepIndicators() {
+  for (let i = 0; i < 4; i++) {
+    const ws = document.getElementById('ws' + i);
+    const icon = document.getElementById('icon' + i);
+    if (icon) icon.classList.remove('pulsing');
+    if (stepsDone[i]) {
+      ws.className = 'wstep done';
+      ws.textContent = '✓';
+    } else if (i === currentStep) {
+      ws.className = 'wstep active';
+      ws.textContent = i + 1;
+      if (icon) icon.classList.add('pulsing');
+    } else {
+      ws.className = 'wstep';
+      ws.textContent = i + 1;
+    }
+    if (i < 3) {
+      document.getElementById('wc' + i).className =
+        'wstep-connector' + (stepsDone[i] ? ' done' : '');
+    }
+  }
+  // All done?
+  if (stepsDone.every(Boolean)) showDone();
+}
+
+function showDone() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('card' + i).style.display = 'none';
+  }
+  const ds = document.getElementById('done-screen');
+  ds.className = 'done-overlay visible';
+  const chips = document.getElementById('done-chips');
+  const labels = ['Niveau E-O ✓', 'Niveau N-S ✓', 'Altitude polaire ✓', 'Azimut Nord ✓'];
+  chips.innerHTML = labels.map((l, i) =>
+    `<div class="chip${stepsDone[i] ? '' : ' pending'}">${l}</div>`
+  ).join('');
+
+  // Haptic if supported
+  if (navigator.vibrate) navigator.vibrate([80, 40, 80]);
+}
+
+function resetWizard() {
+  for (let i = 0; i < 4; i++) stepsDone[i] = false;
+  document.getElementById('done-screen').className = 'done-overlay';
+  goStep(0);
+}
+
+// ─── Sensor Management ───────────────────────────────────────────
+let realOrientationReceived = false;
+let clockInterval = null;
+let polarisInterval = null;
+
+function toggleSensors() {
+  if (!running) {
+    startSensors();
+  } else {
+    stopSensors();
+  }
+}
+
+async function startSensors() {
+  running = true;
+  const btn = document.getElementById('btn-start');
+  btn.textContent = '■ ARRÊTER LES CAPTEURS';
+  btn.classList.add('active');
+
+  // ── 1. GPS ──────────────────────────────────────────────────────
+  const gpsStatus = document.getElementById('gps-status');
+  if ('geolocation' in navigator) {
+    gpsStatus.className = 'status-badge status-warn';
+    gpsStatus.innerHTML = '<div class="dot"></div> Acquisition GPS…';
+    watchId = navigator.geolocation.watchPosition(
+      updateGPS,
+      (err) => {
+        gpsStatus.className = 'status-badge status-err';
+        if (err.code === 1) {
+          gpsStatus.innerHTML = '<div class="dot"></div> GPS : accès refusé';
+        } else if (err.code === 2) {
+          gpsStatus.innerHTML = '<div class="dot"></div> GPS : position indisponible';
+        } else {
+          gpsStatus.innerHTML = '<div class="dot"></div> GPS : délai dépassé';
+        }
+        simulateParis();
+      },
+      { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+    );
+  } else {
+    gpsStatus.className = 'status-badge status-err';
+    gpsStatus.innerHTML = '<div class="dot"></div> GPS non supporté';
+    simulateParis();
+  }
+
+  // ── 2. Inclinomètre / Orientation ───────────────────────────────
+  // iOS 13+ requires explicit user-gesture permission call
+  if (
+    typeof DeviceOrientationEvent !== 'undefined' &&
+    typeof DeviceOrientationEvent.requestPermission === 'function'
+  ) {
+    try {
+      const perm = await DeviceOrientationEvent.requestPermission();
+      if (perm === 'granted') {
+        realOrientationReceived = false;
+        window.addEventListener('deviceorientation', handleOrientation, true);
+        // If no real event arrives within 2 s, fall back to simulation
+        setTimeout(() => {
+          if (!realOrientationReceived) startSimulation();
+        }, 2000);
+      } else {
+        setOrientationStatus('refusé');
+        startSimulation();
+      }
+    } catch (e) {
+      setOrientationStatus('erreur permission');
+      startSimulation();
+    }
+  } else if (typeof DeviceOrientationEvent !== 'undefined') {
+    // Android / desktop — permission not needed
+    realOrientationReceived = false;
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    setTimeout(() => {
+      if (!realOrientationReceived) startSimulation();
+    }, 2000);
+  } else {
+    setOrientationStatus('non supporté');
+    startSimulation();
+  }
+
+  // ── 3. Clock & Polaris refresh ──────────────────────────────────
+  if (!clockInterval) {
+    clockInterval = setInterval(updateClock, 1000);
+  }
+  if (!polarisInterval) {
+    polarisInterval = setInterval(() => {
+      if (lng !== null) updatePolarisDisplay();
+    }, 30000);
+  }
+  updateClock();
+}
+
+function handleOrientation(event) {
+  // Mark that real sensor data has arrived — disable simulation
+  if (event.beta !== null || event.gamma !== null) {
+    realOrientationReceived = true;
+  }
+  updateOrientation(event);
+}
+
+function setOrientationStatus(msg) {
+  // Show orientation sensor status in level panel
+  const el = document.getElementById('level-status');
+  el.className = 'status-badge status-err';
+  el.innerHTML = `<div class="dot"></div> Capteur ${msg}`;
+}
+
+function stopSensors() {
+  running = false;
+  const btn = document.getElementById('btn-start');
+  btn.textContent = '▶ DÉMARRER LES CAPTEURS';
+  btn.classList.remove('active');
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  window.removeEventListener('deviceorientation', handleOrientation, true);
+  realOrientationReceived = false;
+  if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
+  if (polarisInterval) { clearInterval(polarisInterval); polarisInterval = null; }
+}
+
+// ─── Demo / Simulation ───────────────────────────────────────────
+function simulateParis() {
+  lat = 48.8566; lng = 2.3522; elevation = 35;
+  document.getElementById('lat-val').textContent = dms(lat) + ' N';
+  document.getElementById('lng-val').textContent = dms(lng) + ' E';
+  document.getElementById('elev-val').textContent = Math.round(elevation);
+  document.getElementById('acc-val').textContent = '(démo)';
+  document.getElementById('alt-target-val').textContent = lat.toFixed(2) + '°';
+  const st = document.getElementById('gps-status');
+  st.className = 'status-badge status-warn';
+  st.innerHTML = '<div class="dot"></div> Mode démo (Paris)';
+  updatePolarisDisplay();
+}
+
+let simT = 0;
+let simInterval = null;
+function startSimulation() {
+  if (simInterval) return;
+  simInterval = setInterval(() => {
+    if (!running || realOrientationReceived) {
+      if (realOrientationReceived && simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+      }
+      return;
+    }
+    simT += 0.04;
+    _rawNS      = Math.sin(simT * 0.3) * 3;
+    _rawEO      = Math.cos(simT * 0.4) * 2;
+    _rawHeading = ((45 + Math.sin(simT * 0.2) * 10) + 360) % 360;
+    _rawAlt     = 45 + Math.sin(simT * 0.15) * 3;
+    scheduleUI();
+  }, 50);
+}
+</script>
+</body>
+</html>
