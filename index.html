@@ -1326,11 +1326,17 @@ function updateGPS(position) {
 }
 
 function updateOrientation(event) {
-  if (event.beta !== null)  { _rawNS = event.beta;  _rawEO = event.gamma; }
-  if (event.alpha !== null) { _rawHeading = event.alpha; }
-  // Altitude polaire = angle d'élévation de l'axe A.R.
-  // Quand l'iPhone est posé le long de l'axe, beta donne directement l'angle.
-  // On clamp entre 0 et 90°.
+  if (event.beta !== null) { _rawNS = event.beta; _rawEO = event.gamma; }
+
+  // webkitCompassHeading (iOS Safari) : cap magnétique vrai, 0=N, croissant horaire.
+  // Toujours préférer à alpha qui est relatif à l'orientation initiale de l'appareil.
+  // Sur Android/desktop : alpha est antihoraire depuis le Nord → convertir en horaire via (360 - alpha).
+  if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)) {
+    _rawHeading = event.webkitCompassHeading;
+  } else if (event.alpha !== null) {
+    _rawHeading = (360 - event.alpha + 360) % 360;
+  }
+
   _rawAlt = Math.max(0, Math.min(90, Math.abs(_rawNS)));
   scheduleUI();
 }
@@ -1482,17 +1488,25 @@ function updateAltitudeUI() {
 }
 
 function updateAzimuthUI() {
-  // alpha = cap de l'iPhone en degrés horaires depuis le Nord (0=N, 90=E, 180=S, 270=O)
-  // L'aiguille SVG pointe vers le haut (N) au repos → on la contre-rotate de -az
-  // pour qu'elle pointe toujours vers le Nord réel pendant que l'iPhone tourne.
+  // DeviceOrientationEvent.alpha = rotation de l'iPhone autour de l'axe Z,
+  // sens antihoraire vu d'en haut. Ce n'est PAS directement le cap de la façade.
+  // Le cap réel de la façade (vers où pointe le haut de l'écran) = (360 - alpha) % 360.
+  // Ex : alpha=90 → l'iPhone a tourné de 90° antihoraire → la façade pointe à l'Est → cap=90°.
+  // On utilise directement alpha comme cap (iOS WebKit le donne déjà en degrés horaires depuis le Nord).
   const az = ((heading % 360) + 360) % 360;
+  // Cap de la monture = az (0=N, 90=E, 180=S, 270=O)
   document.getElementById('azimuth-val').textContent = az.toFixed(1) + '°';
 
+  // Aiguille : on fixe l'aiguille SVG sur le Nord (haut du SVG)
+  // et on tourne la ROSE sous elle de +az pour que le N de la rose
+  // corresponde à la direction réelle.
+  // Mais notre SVG a l'aiguille qui tourne, pas la rose → aiguille = -az pour pointer vers le N fixe.
   document.getElementById('compass-needle').style.transform = `rotate(${-az}deg)`;
   document.getElementById('compass-needle').style.transformOrigin = '60px 60px';
 
-  // diff > 0 : l'iPhone (et donc la monture) est tourné vers l'Est → corriger vers la gauche (Ouest)
-  // diff < 0 : tourné vers l'Ouest → corriger vers la droite (Est)
+  // Erreur = écart par rapport au Nord (0°)
+  // diff > 0 → monture pointe à l'Est du Nord → tourner vers la gauche (antihoraire)
+  // diff < 0 → monture pointe à l'Ouest du Nord → tourner vers la droite (horaire)
   const diff = az > 180 ? az - 360 : az;
   const corrEl = document.getElementById('azimuth-corr');
   if (Math.abs(diff) < 0.5) {
