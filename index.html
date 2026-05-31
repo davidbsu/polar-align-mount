@@ -1093,17 +1093,44 @@
           <div class="wizard-subtitle">Vis d'élévation de l'axe A.R.</div>
         </div>
       </div>
-      <div class="direction-display">
+
+      <!-- Mini arc gauge (same geometry as main panel, just smaller via transform) -->
+      <div style="display:flex;justify-content:center;margin:4px 0 0">
+        <svg id="wiz-alt-gauge" viewBox="0 0 180 165" width="100%" height="140" style="max-width:320px;overflow:visible">
+          <path id="wiz-alt-track" fill="none" stroke="rgba(80,160,255,0.15)" stroke-width="12" stroke-linecap="butt"
+                d="M 150 150 A 130 130 0 0 0 20 20"/>
+          <path id="wiz-alt-fill"  fill="none" stroke="var(--accent)" stroke-width="12" stroke-linecap="round" d=""/>
+          <line id="wiz-alt-target-tick" x1="0" y1="0" x2="0" y2="0"
+                stroke="var(--amber)" stroke-width="3.5" stroke-linecap="round"/>
+          <line id="wiz-alt-needle" x1="20" y1="150" x2="20" y2="150"
+                stroke="var(--accent2)" stroke-width="2" stroke-linecap="round" opacity="0.9"/>
+          <circle id="wiz-alt-needle-dot" cx="20" cy="150" r="5"
+                  fill="var(--accent2)" style="filter:drop-shadow(0 0 6px var(--accent2))"/>
+          <circle cx="20" cy="150" r="4" fill="rgba(80,160,255,0.4)" stroke="var(--accent)" stroke-width="1"/>
+          <!-- Tick lines inserted by initWizAltGauge() -->
+          <text id="wgl-0"  font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.6)" text-anchor="middle">0°</text>
+          <text id="wgl-15" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.5)" text-anchor="middle">15°</text>
+          <text id="wgl-30" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.5)" text-anchor="middle">30°</text>
+          <text id="wgl-45" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.6)" text-anchor="middle">45°</text>
+          <text id="wgl-60" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.5)" text-anchor="middle">60°</text>
+          <text id="wgl-75" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.5)" text-anchor="middle">75°</text>
+          <text id="wgl-90" font-family="Space Mono,monospace" font-size="10" fill="rgba(80,160,255,0.6)" text-anchor="middle">90°</text>
+          <text id="wiz-alt-val-big" x="105" y="105"
+                fill="var(--accent2)" font-family="Orbitron,sans-serif" font-size="26" font-weight="900"
+                text-anchor="middle" style="filter:drop-shadow(0 0 8px var(--accent2))">--°</text>
+          <text id="wiz-alt-val-target" x="105" y="124"
+                fill="var(--amber)" font-family="Space Mono,monospace" font-size="10"
+                text-anchor="middle">cible --°</text>
+        </svg>
+      </div>
+
+      <div class="direction-display" style="margin-top:4px">
         <div class="dir-arrow dir-warn" id="arr-alt">▲</div>
         <div class="dir-values">
-          <div class="dir-current" id="dv-alt" style="color:var(--amber)">45.0°</div>
+          <div class="dir-current" id="dv-alt" style="color:var(--amber)">--.-°</div>
           <div class="dir-label">altitude actuelle</div>
           <div class="dir-target">Cible latitude : <span id="dv-alt-target">--.-°</span></div>
         </div>
-      </div>
-      <div class="tol-bar-wrap">
-        <div class="tol-bar-labels"><span>−5°</span><span>Cible</span><span>+5°</span></div>
-        <div class="tol-bar"><div class="tol-bar-fill" id="tb-alt" style="width:50%"></div><div class="tol-marker"></div></div>
       </div>
       <div class="instr-text" id="instr-alt">Réglez la vis d'élévation de l'axe polaire. Posez l'iPhone le long de l'axe A.R. pour mesurer l'angle.</div>
       <div class="step-nav">
@@ -1530,7 +1557,7 @@ const TOL = { level: 0.2, alt: 0.3, az: 0.5 };
 function wizardValues() {
   const eoErr  = tiltEO;
   const nsErr  = tiltNS;
-  const altErr = lat !== null ? ((Math.abs(tiltNS) > 45 ? (90 - Math.abs(tiltNS)) : tiltNS) - lat) : null;
+  const altErr = lat !== null ? (deviceAltitude - lat) : null;
   const azDiff = ((heading % 360) + 360) % 360;
   const azErr  = azDiff > 180 ? azDiff - 360 : azDiff;
   return { eoErr, nsErr, altErr, azErr };
@@ -1623,16 +1650,72 @@ function updateStepNS(v) {
   if (ok && !stepsDone[1]) { stepsDone[1] = true; refreshStepIndicators(); }
 }
 
+function initWizAltGauge() {
+  const ticks = [0, 15, 30, 45, 60, 75, 90];
+  const ids   = ['wgl-0','wgl-15','wgl-30','wgl-45','wgl-60','wgl-75','wgl-90'];
+  const svg   = document.getElementById('wiz-alt-gauge');
+  ticks.forEach((a, i) => {
+    const isMajor = (a % 30 === 0);
+    const pInner  = altPt(a, AG.R - (isMajor ? 10 : 6));
+    const pOuter  = altPt(a, AG.R + (isMajor ? 10 : 6));
+    const pLabel  = altPt(a, AG.R + 24);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', pInner.x.toFixed(1)); line.setAttribute('y1', pInner.y.toFixed(1));
+    line.setAttribute('x2', pOuter.x.toFixed(1)); line.setAttribute('y2', pOuter.y.toFixed(1));
+    line.setAttribute('stroke', isMajor ? 'rgba(80,160,255,0.5)' : 'rgba(80,160,255,0.25)');
+    line.setAttribute('stroke-width', isMajor ? '2' : '1');
+    svg.insertBefore(line, svg.firstChild);
+    const el = document.getElementById(ids[i]);
+    let lx = pLabel.x, ly = pLabel.y + 4;
+    if (a === 0)  lx += 4;
+    if (a === 90) ly -= 4;
+    el.setAttribute('x', lx.toFixed(1));
+    el.setAttribute('y', ly.toFixed(1));
+  });
+}
+
+function updateWizAltGauge(currentAlt, targetAlt) {
+  const cur = Math.max(0, Math.min(90, currentAlt));
+  const tgt = Math.max(0, Math.min(90, targetAlt));
+  const err = Math.abs(cur - tgt);
+  const fillColor = err < 0.5 ? 'var(--green)' : err < 2 ? 'var(--amber)' : 'var(--accent)';
+
+  document.getElementById('wiz-alt-fill').setAttribute('d', altArcPath(0, Math.max(0.1, cur), AG.R));
+  document.getElementById('wiz-alt-fill').setAttribute('stroke', fillColor);
+
+  const tip = altPt(cur, AG.R - 8);
+  document.getElementById('wiz-alt-needle').setAttribute('x1', AG.cx);
+  document.getElementById('wiz-alt-needle').setAttribute('y1', AG.cy);
+  document.getElementById('wiz-alt-needle').setAttribute('x2', tip.x.toFixed(1));
+  document.getElementById('wiz-alt-needle').setAttribute('y2', tip.y.toFixed(1));
+  document.getElementById('wiz-alt-needle-dot').setAttribute('cx', tip.x.toFixed(1));
+  document.getElementById('wiz-alt-needle-dot').setAttribute('cy', tip.y.toFixed(1));
+
+  const t1 = altPt(tgt, AG.R + 14);
+  const t2 = altPt(tgt, AG.R - 14);
+  document.getElementById('wiz-alt-target-tick').setAttribute('x1', t1.x.toFixed(1));
+  document.getElementById('wiz-alt-target-tick').setAttribute('y1', t1.y.toFixed(1));
+  document.getElementById('wiz-alt-target-tick').setAttribute('x2', t2.x.toFixed(1));
+  document.getElementById('wiz-alt-target-tick').setAttribute('y2', t2.y.toFixed(1));
+
+  document.getElementById('wiz-alt-val-big').textContent = cur.toFixed(1) + '°';
+  document.getElementById('wiz-alt-val-big').setAttribute('fill', fillColor);
+  document.getElementById('wiz-alt-val-target').textContent = `cible ${tgt.toFixed(2)}°`;
+}
+
 // ── Step 2: Altitude ──
 function updateStepAlt(v) {
   if (v === null || lat === null) return;
   const currentAlt = deviceAltitude;
   const abs = Math.abs(v);
   const ok  = abs <= TOL.alt;
+
+  // Update the mini arc gauge in the wizard card
+  updateWizAltGauge(currentAlt, lat);
+
   document.getElementById('dv-alt').textContent = currentAlt.toFixed(1) + '°';
   document.getElementById('dv-alt').style.color = errColor(abs, TOL.alt);
   document.getElementById('dv-alt-target').textContent = lat.toFixed(2) + '°';
-  setTolBar('tb-alt', v, 5);
 
   const arr = document.getElementById('arr-alt');
   arr.className = 'dir-arrow ' + arrowClass(abs, TOL.alt);
@@ -1915,11 +1998,13 @@ function startSimulation() {
 
 // ─── Init on load ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  // Draw the fixed background arc and graduation ticks
   document.getElementById('alt-track').setAttribute('d', altArcPath(0, 90, AG.R));
   initAltGauge();
-  // Show gauge at 0 so it's not blank
   updateAltGauge(0, 0);
+
+  document.getElementById('wiz-alt-gauge').querySelector('path').setAttribute('d', altArcPath(0, 90, AG.R));
+  initWizAltGauge();
+  updateWizAltGauge(0, 0);
 });
 </script>
 </body>
