@@ -983,112 +983,136 @@
     <div class="panel-title">🔭 Position de Polaris — Réticule SkyWatcher 2012-2032</div>
     <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
 
-      <!-- SVG Reticle -->
+      <!-- SVG Reticle — SkyWatcher HM5 / Orion 2012-2032 fidèle à Polar Scope Align -->
+      <!--
+        Géométrie (viewBox 280×280, centre NCP = 140,140) :
+        • Grand cercle de trajectoire de Polaris : r=62 px (~62' à l'échelle)
+        • Polaris 2025 ≈ 43' du pôle → r_polaris = 43 px
+        • Petits cercles annuels (r=5) placés sur le grand cercle à HA=0 (sommet)
+          espacés radialement pour couvrir 2012(r=47)→2032(r=42) sur l'arc
+        • Croix NCP fine au centre
+        • Graduation horaire 0-12 sur le bord (comme une horloge)
+        • Cassiopée en haut-droite, Grande Ourse en bas-gauche (comme sur le vrai réticule)
+      -->
       <svg id="reticle-svg" viewBox="0 0 280 280" width="260" height="260"
-           style="border-radius:50%;background:radial-gradient(circle,#060e1c 0%,#020508 100%);
-                  box-shadow:0 0 24px rgba(58,143,255,0.35),inset 0 0 40px rgba(0,0,0,0.8)">
+           style="border-radius:50%;background:radial-gradient(circle,#06101f 0%,#020408 80%,#000 100%);
+                  box-shadow:0 0 28px rgba(58,143,255,0.4),inset 0 0 50px rgba(0,0,0,0.9)">
 
-        <!-- ── Outer scope rim ── -->
-        <circle cx="140" cy="140" r="136" fill="none" stroke="rgba(58,143,255,0.25)" stroke-width="1.5"/>
+        <!-- Bord du chercheur -->
+        <circle cx="140" cy="140" r="136" fill="none" stroke="rgba(80,130,220,0.3)" stroke-width="1.5"/>
+        <circle cx="140" cy="140" r="132" fill="none" stroke="rgba(80,130,220,0.1)" stroke-width="0.5"/>
 
-        <!-- ── Hour clock ring (just inside rim) ── -->
-        <!-- 12 hour ticks + labels -->
-        <g id="clock-ring" stroke="rgba(100,160,255,0.5)" stroke-width="1" fill="none">
-          <!-- Major ticks at 0,3,6,9 h -->
-          <line x1="140" y1="10"  x2="140" y2="24"  stroke="rgba(100,180,255,0.8)" stroke-width="1.5"/>
-          <line x1="270" y1="140" x2="256" y2="140" stroke="rgba(100,180,255,0.8)" stroke-width="1.5"/>
-          <line x1="140" y1="270" x2="140" y2="256" stroke="rgba(100,180,255,0.8)" stroke-width="1.5"/>
-          <line x1="10"  y1="140" x2="24"  y2="140" stroke="rgba(100,180,255,0.8)" stroke-width="1.5"/>
-          <!-- Minor ticks at 1,2,4,5,7,8,10,11 h -->
-          <line x1="209.7" y1="21.4"  x2="203.8" y2="33.6"  />
-          <line x1="258.6" y1="70.3"  x2="246.4" y2="76.2"  />
-          <line x1="258.6" y1="209.7" x2="246.4" y2="203.8" />
-          <line x1="209.7" y1="258.6" x2="203.8" y2="246.4" />
-          <line x1="70.3"  y1="258.6" x2="76.2"  y2="246.4" />
-          <line x1="21.4"  y1="209.7" x2="33.6"  y2="203.8" />
-          <line x1="21.4"  y1="70.3"  x2="33.6"  y2="76.2"  />
-          <line x1="70.3"  y1="21.4"  x2="76.2"  y2="33.6"  />
+        <!-- ══ Graduation horaire (0h en haut, sens horaire) ══ -->
+        <g stroke="rgba(120,170,255,0.6)" stroke-width="1">
+          <!-- Ticks majeurs 0,3,6,9h -->
+          <line x1="140" y1="7"   x2="140" y2="22"  stroke-width="1.5" stroke="rgba(140,190,255,0.9)"/>
+          <line x1="273" y1="140" x2="258" y2="140" stroke-width="1.5" stroke="rgba(140,190,255,0.9)"/>
+          <line x1="140" y1="273" x2="140" y2="258" stroke-width="1.5" stroke="rgba(140,190,255,0.9)"/>
+          <line x1="7"   y1="140" x2="22"  y2="140" stroke-width="1.5" stroke="rgba(140,190,255,0.9)"/>
+          <!-- Ticks mineurs 1h,2h,4h,5h,7h,8h,10h,11h -->
+          <line x1="211" y1="20"  x2="205" y2="33" />
+          <line x1="260" y1="69"  x2="248" y2="75" />
+          <line x1="260" y1="211" x2="248" y2="205"/>
+          <line x1="211" y1="260" x2="205" y2="248"/>
+          <line x1="69"  y1="260" x2="75"  y2="248"/>
+          <line x1="20"  y1="211" x2="33"  y2="205"/>
+          <line x1="20"  y1="69"  x2="33"  y2="75" />
+          <line x1="69"  y1="20"  x2="75"  y2="33" />
         </g>
-        <!-- Clock labels -->
-        <text x="140" y="8"   text-anchor="middle" dominant-baseline="auto"   font-family="Space Mono,monospace" font-size="9" fill="rgba(140,190,255,0.9)">0</text>
-        <text x="274" y="143" text-anchor="start"  dominant-baseline="middle" font-family="Space Mono,monospace" font-size="9" fill="rgba(140,190,255,0.9)">3</text>
-        <text x="140" y="277" text-anchor="middle" dominant-baseline="hanging" font-family="Space Mono,monospace" font-size="9" fill="rgba(140,190,255,0.9)">6</text>
-        <text x="6"   y="143" text-anchor="end"    dominant-baseline="middle" font-family="Space Mono,monospace" font-size="9" fill="rgba(140,190,255,0.9)">9</text>
+        <!-- Labels horaires -->
+        <text x="140" y="6"   text-anchor="middle" dominant-baseline="auto"    font-family="'Space Mono',monospace" font-size="10" fill="rgba(160,200,255,0.95)" font-weight="bold">12</text>
+        <text x="276" y="144" text-anchor="start"  dominant-baseline="middle"  font-family="'Space Mono',monospace" font-size="10" fill="rgba(160,200,255,0.85)">3</text>
+        <text x="140" y="278" text-anchor="middle" dominant-baseline="hanging"  font-family="'Space Mono',monospace" font-size="10" fill="rgba(160,200,255,0.85)">6</text>
+        <text x="4"   y="144" text-anchor="end"    dominant-baseline="middle"  font-family="'Space Mono',monospace" font-size="10" fill="rgba(160,200,255,0.85)">9</text>
 
-        <!-- ── Polaris orbit circle ──
-             In 2025 Polaris is ~44' from NCP. Scope FOV ≈ 2° radius = 120 px.
-             44' / 120' * 120px ≈ 44px from centre. -->
-        <circle cx="140" cy="140" r="44" fill="none" stroke="rgba(100,160,255,0.18)" stroke-width="0.8" stroke-dasharray="3,3"/>
+        <!-- ══ Grand cercle de trajectoire de Polaris ══ -->
+        <circle cx="140" cy="140" r="62" fill="none"
+                stroke="rgba(100,150,255,0.35)" stroke-width="1.2" stroke-dasharray="4,3"/>
 
-        <!-- ── Year circles on the orbit ──
-             Polaris distance from NCP (arcmin) by year (precession, approx):
-             2012≈47', 2016≈46', 2020≈45', 2024≈44', 2028≈43', 2032≈42'
-             All at the same angular position on the orbit (top, HA=0 reference).
-             Mapped: 1' = 120px/120' = 1px  → r2012=47, r2016=46, r2020=45, r2024=44, r2028=43, r2032=42
-             Placed horizontally at top (12h position = HA=0).
-             x = 140,  y = 140 - r  -->
-        <!-- Year dots + labels (spaced horizontally for readability) -->
-        <g font-family="Space Mono,monospace" font-size="7.5" fill="none">
-          <!-- 2012 -->
-          <circle cx="116" cy="97"  r="3.5" stroke="rgba(80,140,255,0.6)" stroke-width="1"/>
-          <text   x="108"  y="90"  text-anchor="middle" fill="rgba(80,140,255,0.6)">2012</text>
-          <!-- 2016 -->
-          <circle cx="127" cy="96"  r="3.5" stroke="rgba(80,160,255,0.7)" stroke-width="1"/>
-          <text   x="127"  y="89"  text-anchor="middle" fill="rgba(80,160,255,0.7)">2016</text>
-          <!-- 2020 -->
-          <circle cx="140" cy="95"  r="3.5" stroke="rgba(80,180,255,0.8)" stroke-width="1"/>
-          <text   x="140"  y="88"  text-anchor="middle" fill="rgba(80,180,255,0.8)">2020</text>
-          <!-- 2024 -->
-          <circle cx="153" cy="96"  r="3.5" stroke="rgba(80,200,255,0.9)" stroke-width="1"/>
-          <text   x="153"  y="89"  text-anchor="middle" fill="rgba(80,200,255,0.9)">2024</text>
-          <!-- 2028 -->
-          <circle cx="164" cy="97"  r="3.5" stroke="rgba(80,220,255,0.8)" stroke-width="1"/>
-          <text   x="164"  y="90"  text-anchor="middle" fill="rgba(80,220,255,0.8)">2028</text>
-          <!-- 2032 -->
-          <circle cx="174" cy="99"  r="3.5" stroke="rgba(80,240,255,0.7)" stroke-width="1"/>
-          <text   x="175"  y="92"  text-anchor="middle" fill="rgba(80,240,255,0.7)">2032</text>
+        <!-- ══ Cassiopée (haut-droite, schématique) — W caractéristique ══ -->
+        <g stroke="rgba(80,120,200,0.5)" stroke-width="0.8" fill="rgba(80,120,200,0.5)">
+          <polyline points="195,44 202,55 210,46 218,57 226,46" fill="none" stroke="rgba(100,150,220,0.5)" stroke-width="0.9"/>
+          <circle cx="195" cy="44" r="1.5"/><circle cx="202" cy="55" r="1.2"/>
+          <circle cx="210" cy="46" r="1.5"/><circle cx="218" cy="57" r="1.2"/>
+          <circle cx="226" cy="46" r="1.5"/>
+          <text x="210" y="40" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="rgba(100,150,220,0.6)">Cass.</text>
         </g>
 
-        <!-- ── NCP crosshair ── -->
-        <line x1="140" y1="128" x2="140" y2="152" stroke="rgba(100,180,255,0.55)" stroke-width="0.8"/>
-        <line x1="128" y1="140" x2="152" y2="140" stroke="rgba(100,180,255,0.55)" stroke-width="0.8"/>
+        <!-- ══ Grande Ourse (bas-gauche, schématique) — casserole ══ -->
+        <g stroke="rgba(80,120,200,0.5)" stroke-width="0.8" fill="rgba(80,120,200,0.5)">
+          <!-- Carré du bol -->
+          <polyline points="54,220 70,215 72,228 56,233 54,220" fill="none" stroke="rgba(100,150,220,0.5)" stroke-width="0.9"/>
+          <!-- Manche -->
+          <polyline points="72,215 85,205 96,210 108,200" fill="none" stroke="rgba(100,150,220,0.5)" stroke-width="0.9"/>
+          <circle cx="54"  cy="220" r="1.5"/><circle cx="70" cy="215" r="1.5"/>
+          <circle cx="72"  cy="228" r="1.2"/><circle cx="56" cy="233" r="1.2"/>
+          <circle cx="85"  cy="205" r="1.5"/><circle cx="96" cy="210" r="1.2"/>
+          <circle cx="108" cy="200" r="1.5"/>
+          <text x="68" y="243" text-anchor="middle" font-family="'Space Mono',monospace" font-size="7" fill="rgba(100,150,220,0.6)">G.Ourse</text>
+        </g>
 
-        <!-- ── NCP centre mark ── -->
-        <circle cx="140" cy="140" r="2.5" fill="none" stroke="rgba(0,229,255,0.9)" stroke-width="1"/>
-        <circle cx="140" cy="140" r="0.8" fill="rgba(0,229,255,0.9)"/>
+        <!-- ══ Cercles annuels sur le grand cercle (r_traj=62)
+              Polaris distance au pôle par année (arcmin) → px (échelle 1':1px) :
+              2012=47, 2016=46, 2020=45, 2024=44, 2028=43, 2032=42
+              Placés à HA=0 (sommet), répartis angulièrement ±15° pour les distinguer ══ -->
+        <!-- Les cercles sont disposés en arc autour du sommet du grand cercle,
+             à leurs rayons respectifs depuis le NCP (centre=140,140).
+             On les répartit angulairement de -10° à +10° pour qu'ils soient lisibles. -->
+        <g font-family="'Space Mono',monospace" font-size="7.5">
+          <!-- 2012 : r=47, angle=-12° depuis le sommet →
+               x=140+47*sin(-12°)=140-9.8=130.2 , y=140-47*cos(-12°)=140-45.9=94.1 -->
+          <circle cx="130" cy="94"  r="4.5" fill="none" stroke="rgba(80,130,220,0.55)" stroke-width="1"/>
+          <text   x="119"  y="90"   text-anchor="middle" fill="rgba(80,130,220,0.6)">2012</text>
 
-        <!-- ── Polaris dot (animated, moved by JS) ── -->
-        <circle id="polaris-circle" cx="140" cy="96" r="5"
-                fill="rgba(255,200,80,0.25)" stroke="var(--amber)" stroke-width="1.5"
-                style="filter:drop-shadow(0 0 5px rgba(255,180,0,0.8))"/>
-        <!-- Inner bright core -->
-        <circle id="polaris-core" cx="140" cy="96" r="2"
-                fill="var(--amber)"
-                style="filter:drop-shadow(0 0 4px rgba(255,200,0,1))"/>
+          <!-- 2016 : r=46, angle=-7° →
+               x=140+46*sin(-7°)=140-5.6=134.4 , y=140-46*cos(-7°)=140-45.6=94.4 -->
+          <circle cx="134" cy="94"  r="4.5" fill="none" stroke="rgba(80,150,230,0.65)" stroke-width="1"/>
+          <text   x="129"  y="88"   text-anchor="middle" fill="rgba(80,150,230,0.65)">2016</text>
+
+          <!-- 2020 : r=45, angle=0° → x=140, y=140-45=95 -->
+          <circle cx="140" cy="95"  r="4.5" fill="none" stroke="rgba(80,175,240,0.8)" stroke-width="1.2"/>
+          <text   x="140"  y="88"   text-anchor="middle" fill="rgba(80,175,240,0.8)">2020</text>
+
+          <!-- 2024 : r=44, angle=+7° →
+               x=140+44*sin(7°)=140+5.4=145.4 , y=140-44*cos(7°)=140-43.7=96.3 -->
+          <circle cx="145" cy="96"  r="4.5" fill="none" stroke="rgba(80,200,250,0.9)" stroke-width="1.2"/>
+          <text   x="151"  y="90"   text-anchor="middle" fill="rgba(80,200,250,0.9)">2024</text>
+
+          <!-- 2028 : r=43, angle=+12° →
+               x=140+43*sin(12°)=140+8.9=148.9 , y=140-43*cos(12°)=140-42.1=97.9 -->
+          <circle cx="149" cy="98"  r="4.5" fill="none" stroke="rgba(80,220,255,0.75)" stroke-width="1"/>
+          <text   x="158"  y="93"   text-anchor="middle" fill="rgba(80,220,255,0.75)">2028</text>
+
+          <!-- 2032 : r=42, angle=+17° →
+               x=140+42*sin(17°)=140+12.3=152.3 , y=140-42*cos(17°)=140-40.2=99.8 -->
+          <circle cx="152" cy="100" r="4.5" fill="none" stroke="rgba(80,240,255,0.6)" stroke-width="1"/>
+          <text   x="163"  y="96"   text-anchor="middle" fill="rgba(80,240,255,0.6)">2032</text>
+        </g>
+
+        <!-- ══ Croix NCP (fine, centrée) ══ -->
+        <line x1="140" y1="122" x2="140" y2="158" stroke="rgba(140,190,255,0.6)" stroke-width="0.8"/>
+        <line x1="122" y1="140" x2="158" y2="140" stroke="rgba(140,190,255,0.6)" stroke-width="0.8"/>
+        <!-- Cercle central NCP -->
+        <circle cx="140" cy="140" r="3"   fill="none" stroke="rgba(0,229,255,0.9)" stroke-width="1"/>
+        <circle cx="140" cy="140" r="0.8" fill="rgba(0,229,255,1)"/>
+        <!-- Label NCP -->
+        <text x="147" y="136" font-family="'Space Mono',monospace" font-size="7" fill="rgba(0,229,255,0.55)">NCP</text>
+
+        <!-- ══ Point Polaris dynamique (déplacé par JS) ══ -->
+        <!-- Halo -->
+        <circle id="polaris-halo" cx="140" cy="97" r="8"
+                fill="rgba(255,190,50,0.08)" stroke="none"/>
+        <!-- Cercle extérieur -->
+        <circle id="polaris-circle" cx="140" cy="97" r="5.5"
+                fill="rgba(255,200,80,0.15)" stroke="rgba(255,180,30,0.9)" stroke-width="1.5"/>
+        <!-- Point central brillant -->
+        <circle id="polaris-core" cx="140" cy="97" r="2.2"
+                fill="rgba(255,220,100,1)"
+                style="filter:drop-shadow(0 0 5px rgba(255,200,0,1))"/>
         <!-- Label -->
-        <text id="polaris-label" x="140" y="86" text-anchor="middle"
-              font-family="Space Mono,monospace" font-size="8" fill="var(--amber)" opacity="0.9">Polaris</text>
-
-        <!-- ── Little Dipper schematic (Ursa Minor) ──
-             Approximate positions relative to Polaris/pole for orientation reference -->
-        <g stroke="rgba(60,100,180,0.35)" stroke-width="0.8" fill="none">
-          <!-- Handle: Polaris at top, then curve down-right -->
-          <polyline points="140,96 148,115 150,130 145,142"/>
-          <!-- Bowl: small trapezoid near pole -->
-          <polyline points="145,142 130,148 125,158 145,155 145,142"/>
-          <!-- Stars dots -->
-          <circle cx="140" cy="96"  r="1.5" fill="rgba(60,100,180,0.4)"/>
-          <circle cx="148" cy="115" r="1.2" fill="rgba(60,100,180,0.35)"/>
-          <circle cx="150" cy="130" r="1.2" fill="rgba(60,100,180,0.35)"/>
-          <circle cx="145" cy="142" r="1.5" fill="rgba(60,100,180,0.4)"/>
-          <circle cx="130" cy="148" r="1.2" fill="rgba(60,100,180,0.35)"/>
-          <circle cx="125" cy="158" r="1.2" fill="rgba(60,100,180,0.3)"/>
-          <circle cx="145" cy="155" r="1.2" fill="rgba(60,100,180,0.3)"/>
-        </g>
-
-        <!-- ── "NCP" label ── -->
-        <text x="145" y="138" font-family="Space Mono,monospace" font-size="7"
-              fill="rgba(0,229,255,0.6)">NCP</text>
+        <text id="polaris-label" x="140" y="86"
+              text-anchor="middle" font-family="'Space Mono',monospace" font-size="8.5"
+              fill="rgba(255,200,80,0.95)" font-weight="bold">α UMi</text>
 
       </svg>
 
@@ -1667,7 +1691,9 @@ function updatePolarisDisplay() {
   const px = CX + polarisRadius * Math.sin(haRad);
   const py = CY - polarisRadius * Math.cos(haRad);
 
-  // Move Polaris dot + core + label
+  // Move Polaris dot + core + label + halo
+  document.getElementById('polaris-halo').setAttribute('cx', px.toFixed(1));
+  document.getElementById('polaris-halo').setAttribute('cy', py.toFixed(1));
   document.getElementById('polaris-circle').setAttribute('cx', px.toFixed(1));
   document.getElementById('polaris-circle').setAttribute('cy', py.toFixed(1));
   document.getElementById('polaris-core').setAttribute('cx', px.toFixed(1));
