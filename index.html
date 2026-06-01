@@ -1633,8 +1633,8 @@ function updateStepEO(v) {
     document.getElementById('instr-eo').className = 'instr-text';
     document.getElementById('btn-val-eo').className = 'btn-nav primary';
   }
-  // Auto-validate silently
-  if (ok && !stepsDone[0]) { stepsDone[0] = true; refreshStepIndicators(); }
+  // Auto-validate silently — seulement après warmup capteurs
+
 }
 
 // ── Step 1: N-S ──
@@ -1661,7 +1661,7 @@ function updateStepNS(v) {
     document.getElementById('instr-ns').className = 'instr-text';
     document.getElementById('btn-val-ns').className = 'btn-nav primary';
   }
-  if (ok && !stepsDone[1]) { stepsDone[1] = true; refreshStepIndicators(); }
+
 }
 
 function initWizAltGauge() {
@@ -1746,7 +1746,7 @@ function updateStepAlt(v) {
     document.getElementById('instr-alt').className = 'instr-text';
     document.getElementById('btn-val-alt').className = 'btn-nav primary';
   }
-  if (ok && !stepsDone[2]) { stepsDone[2] = true; refreshStepIndicators(); }
+
 }
 
 // ── Step 3: Azimut ──
@@ -1777,7 +1777,7 @@ function updateStepAz(v) {
     document.getElementById('instr-az').className = 'instr-text';
     document.getElementById('btn-val-az').className = 'btn-nav primary';
   }
-  if (ok && !stepsDone[3]) { stepsDone[3] = true; refreshStepIndicators(); }
+
 }
 
 // ── Step navigation ──
@@ -1971,6 +1971,9 @@ function stopSensors() {
   }
   window.removeEventListener('deviceorientation', handleOrientation, true);
   realOrientationReceived = false;
+  // Réinitialise les étapes validées
+  for (let i = 0; i < 4; i++) stepsDone[i] = false;
+  refreshStepIndicators();
   if (clockInterval) { clearInterval(clockInterval); clockInterval = null; }
   if (polarisInterval) { clearInterval(polarisInterval); polarisInterval = null; }
 }
