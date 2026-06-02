@@ -1743,7 +1743,9 @@ function updatePolarisDisplay() {
   // ── Géométrie réticule SA Console (viewBox 300×300, centre=150,150) ──
   // Échelle : r=62px pour le cercle trajectoire (~62' de rayon)
   // Polaris 2025 ≈ 43' du pôle → on utilise r=62 (même cercle, point sur le bord)
-  const CX = 150, CY = 150, R_POLARIS = 90;
+  const CX = 150, CY = 150;
+  const year = new Date().getFullYear();
+  const R_POLARIS = 81 - (year - 2026) * 1.5;
 
   // HA=0 → Polaris au sommet (position 0h sur le cadran)
   // x = CX + R*sin(HA_deg),  y = CY - R*cos(HA_deg)
