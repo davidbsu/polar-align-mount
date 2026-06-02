@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PolAlign — Mise en Station</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
@@ -1563,12 +1563,14 @@ function updateGPS(position) {
 function updateOrientation(event) {
   if (event.beta !== null) { _rawNS = event.beta; _rawEO = event.gamma; }
 
-  // webkitCompassHeading (iOS Safari) : cap magnétique vrai, 0=N, croissant horaire.
-  // Toujours préférer à alpha qui est relatif à l'orientation initiale de l'appareil.
-  // Sur Android/desktop : alpha est antihoraire depuis le Nord → convertir en horaire via (360 - alpha).
   if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)) {
+    // iOS : webkitCompassHeading est le cap magnétique vrai (0=N, croissant horaire)
     _rawHeading = event.webkitCompassHeading;
+  } else if (event.absolute === true && event.alpha !== null) {
+    // Android deviceorientationabsolute : alpha absolu, 0=N, ANTIHORAIRE → convertir
+    _rawHeading = (360 - event.alpha + 360) % 360;
   } else if (event.alpha !== null) {
+    // Fallback deviceorientation standard : alpha relatif → approximation
     _rawHeading = (360 - event.alpha + 360) % 360;
   }
 
@@ -2149,20 +2151,17 @@ async function startSensors() {
   }
 
   // ── 2. Inclinomètre / Orientation ───────────────────────────────
-  // iOS 13+ requires explicit user-gesture permission call
-  if (
-    typeof DeviceOrientationEvent !== 'undefined' &&
-    typeof DeviceOrientationEvent.requestPermission === 'function'
-  ) {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+  if (isIOS && typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // ── iOS 13+ : demande de permission obligatoire ──
     try {
       const perm = await DeviceOrientationEvent.requestPermission();
       if (perm === 'granted') {
         realOrientationReceived = false;
         window.addEventListener('deviceorientation', handleOrientation, true);
-        // If no real event arrives within 2 s, fall back to simulation
-        setTimeout(() => {
-          if (!realOrientationReceived) startSimulation();
-        }, 2000);
+        setTimeout(() => { if (!realOrientationReceived) startSimulation(); }, 2000);
       } else {
         setOrientationStatus('refusé');
         startSimulation();
@@ -2171,13 +2170,27 @@ async function startSensors() {
       setOrientationStatus('erreur permission');
       startSimulation();
     }
+  } else if (!isIOS && typeof DeviceOrientationEvent !== 'undefined') {
+    // ── Android : écouter deviceorientationabsolute en priorité ──
+    // deviceorientationabsolute fournit alpha par rapport au Nord magnétique (absolu)
+    realOrientationReceived = false;
+    const onAbsolute = (e) => {
+      if (e.absolute === true || e.webkitCompassHeading !== undefined) {
+        window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
+        window.removeEventListener('deviceorientation', handleOrientation, true);
+        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+      }
+    };
+    window.addEventListener('deviceorientationabsolute', onAbsolute, { once: true, capture: true });
+    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    // Fallback sur deviceorientation si deviceorientationabsolute non supporté
+    window.addEventListener('deviceorientation', handleOrientation, true);
+    setTimeout(() => { if (!realOrientationReceived) startSimulation(); }, 2000);
   } else if (typeof DeviceOrientationEvent !== 'undefined') {
-    // Android / desktop — permission not needed
+    // ── Desktop / autre ──
     realOrientationReceived = false;
     window.addEventListener('deviceorientation', handleOrientation, true);
-    setTimeout(() => {
-      if (!realOrientationReceived) startSimulation();
-    }, 2000);
+    setTimeout(() => { if (!realOrientationReceived) startSimulation(); }, 2000);
   } else {
     setOrientationStatus('non supporté');
     startSimulation();
@@ -2221,6 +2234,7 @@ function stopSensors() {
     watchId = null;
   }
   window.removeEventListener('deviceorientation', handleOrientation, true);
+  window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
   realOrientationReceived = false;
   // Réinitialise les étapes validées
   for (let i = 0; i < 4; i++) stepsDone[i] = false;
