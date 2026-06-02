@@ -5,6 +5,6 @@ version test avec quelques bugs repérés:
 - graduation incorecte pour l'altitude
 - boussole parfois inversée.
 
-testé actuellemnt que sur portable iOS.
+Version iOS uniquement.
 
 David
