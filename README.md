@@ -1,10 +1,18 @@
-bonjour,
+Hello
 
-cette app a été crée à partir d'une intelligence artificielle (Claude AI) afin de réaliser l'alignement polaire d'une monture équatoriale lorsque qu'on ne peut pas observer l'étoile polaire, en utilisant le gps et le gyroscope d'un smartphone.
-version test avec quelques bugs repérés:
-- graduation incorecte pour l'altitude
-- boussole parfois inversée.
+Here is the latest version of my Polar Align Mount app, created using artificial intelligence (Claude AI).
 
-Version iOS uniquement.
+It allows you to use your phone's GPS and gyroscope to polar align an equatorial mount.
+
+This version works on both iOS and Android phones.
+David
+
+-------------------------------------------------------------------------------------------------------------------------------
+
+hello
+
+voici la dernière version de mon appli polar align mount créée par intelligence artificielle (claude AI).
+Elle permet d'utiliser le gps et le gyroscope de son portable pour réaliser la mise en station d'une monture équatoriale.
+Cette version fonctionne aussi bien sur téléphone iOS que Android.
 
 David
