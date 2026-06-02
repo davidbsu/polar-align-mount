@@ -1780,10 +1780,14 @@ function updatePolarisDisplay() {
   document.getElementById('ha-val').textContent  = hoursToHM(ha);
   document.getElementById('lst-val').textContent = hoursToHM(getLST(lng));
 
-  // Position de Polaris sur le cadran 12h (hh:mm)
-  const ha12 = ha % 12;
-  const ph = Math.floor(ha12);
-  const pm = Math.floor((ha12 - ph) * 60);
+  // Position visible du point blanc dans le réticule (comme une horloge, 0h en haut, sens horaire)
+  // dx = px - CX, dy = py - CY  → angle = atan2(dx, -dy) pour convention horloge (0=haut)
+  const dx = px - CX, dy = py - CY;
+  let clockAngle = Math.atan2(dx, -dy) * 180 / Math.PI; // degrés, -180..+180
+  if (clockAngle < 0) clockAngle += 360; // 0..360
+  const clockH  = clockAngle / 30;       // convertir en heures (360°=12h)
+  const ph = Math.floor(clockH);
+  const pm = Math.floor((clockH - ph) * 60);
   document.getElementById('polaris-pos-val').textContent =
     String(ph).padStart(2,'0') + ':' + String(pm).padStart(2,'0');
 
