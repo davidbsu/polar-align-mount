@@ -5,6 +5,7 @@ Here is the latest version of my Polar Align Mount app, created using artificial
 It allows you to use your phone's GPS and gyroscope to polar align an equatorial mount.
 
 This version works on both iOS and Android phones.
+
 David
 
 -------------------------------------------------------------------------------------------------------------------------------
