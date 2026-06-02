@@ -1170,7 +1170,24 @@
           <line x1="141.1" y1="48.4" x2="140.5" y2="41.4"/>
         </g>
 
-        <!-- Cercle NCP -->
+        <!-- ══ Arcs de 12° centrés sur les axes de la croix, r=72, 84, 96 ══ -->
+        <g fill="none" stroke="rgba(120,165,255,0.45)" stroke-width="1.2" stroke-linecap="round">
+          <!-- r=72 -->
+          <path d="M 142.47 78.39 A 72 72 0 0 1 157.53 78.39"/>
+          <path d="M 221.61 142.47 A 72 72 0 0 1 221.61 157.53"/>
+          <path d="M 157.53 221.61 A 72 72 0 0 1 142.47 221.61"/>
+          <path d="M 78.39 157.53 A 72 72 0 0 1 78.39 142.47"/>
+          <!-- r=84 -->
+          <path d="M 141.22 66.46 A 84 84 0 0 1 158.78 66.46"/>
+          <path d="M 233.54 141.22 A 84 84 0 0 1 233.54 158.78"/>
+          <path d="M 158.78 233.54 A 84 84 0 0 1 141.22 233.54"/>
+          <path d="M 66.46 158.78 A 84 84 0 0 1 66.46 141.22"/>
+          <!-- r=96 -->
+          <path d="M 139.97 54.53 A 96 96 0 0 1 160.03 54.53"/>
+          <path d="M 245.47 139.97 A 96 96 0 0 1 245.47 160.03"/>
+          <path d="M 160.03 245.47 A 96 96 0 0 1 139.97 245.47"/>
+          <path d="M 54.53 160.03 A 96 96 0 0 1 54.53 139.97"/>
+        </g>
         <circle cx="150" cy="150" r="3.5" fill="none" stroke="rgba(0,229,255,0.85)" stroke-width="1.2"/>
         <circle cx="150" cy="150" r="1.2" fill="rgba(0,229,255,1)"/>
 
@@ -1196,19 +1213,12 @@
           <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim)">TSL</div>
           <div style="font-family:'Orbitron',sans-serif;font-size:15px;color:var(--text);margin-top:2px" id="lst-val">--h --m</div>
         </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;letter-spacing:1.5px;color:var(--text-dim)">POSITION DE POLARIS</div>
+          <div style="font-family:'Orbitron',sans-serif;font-size:15px;color:var(--accent2);margin-top:2px" id="polaris-pos-val">--:--</div>
+        </div>
       </div>
     </div>
-
-    <div class="precision-meter" style="margin-top:10px">
-      <div class="precision-label">
-        <span>Précision globale</span>
-        <span id="global-prec-label">---</span>
-      </div>
-      <div class="precision-bar">
-        <div class="precision-fill" id="global-prec-bar" style="width:0%;background:var(--red)"></div>
-      </div>
-    </div>
-  </div>
 
   <!-- Guided Correction Wizard -->
   <div class="panel" id="wizard-panel">
@@ -1760,16 +1770,12 @@ function updatePolarisDisplay() {
   document.getElementById('ha-val').textContent  = hoursToHM(ha);
   document.getElementById('lst-val').textContent = hoursToHM(getLST(lng));
 
-  // ── Barre de précision globale ──
-  const altErr   = lat !== null ? Math.abs(deviceAltitude - lat) : 5;
-  const azErr    = Math.abs(heading > 180 ? heading - 360 : heading);
-  const levelErr = Math.sqrt(tiltNS * tiltNS + tiltEO * tiltEO);
-  const totalErr = (altErr / 5 + azErr / 10 + levelErr / 2) / 3;
-  const prec     = Math.max(0, Math.min(100, 100 - totalErr * 100));
-  document.getElementById('global-prec-bar').style.width      = prec + '%';
-  document.getElementById('global-prec-bar').style.background =
-    prec > 80 ? 'var(--green)' : prec > 50 ? 'var(--amber)' : 'var(--red)';
-  document.getElementById('global-prec-label').textContent    = prec.toFixed(0) + '%';
+  // Position de Polaris dans le réticule en hh:mm (angle horaire sur 12h)
+  const ha12 = ha % 12; // ramener sur 12h comme un cadran d'horloge
+  const hh = Math.floor(ha12);
+  const mm = Math.floor((ha12 - hh) * 60);
+  document.getElementById('polaris-pos-val').textContent =
+    String(hh).padStart(2,'0') + ':' + String(mm).padStart(2,'0');
 }
 
 function updateClock() {
