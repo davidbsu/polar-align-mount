@@ -93,7 +93,7 @@ Sur Android avec Chrome :
 
 
 
-en espérant que cette app vous plaise.
+En espérant que cette app vous plaise.
 
 
 
