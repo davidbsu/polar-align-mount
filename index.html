@@ -1709,8 +1709,8 @@ function scheduleUI() {
     heading       = lpfAngle(heading,  _rawHeading, ALPHA_HEADING);
     deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
     // Appliquer les offsets d'étalonnage sur les valeurs affichées
-    tiltNS = _fNS - calibNS;
-    tiltEO = _fEO - calibEO;
+    tiltNS = _fNS + calibNS;
+    tiltEO = _fEO + calibEO;
     // Render
     updateLevelUI();
     updateAltitudeUI();
