@@ -1574,13 +1574,43 @@ function computeMagneticDeclination(latDeg, lngDeg, altM) {
 }
 
 function fetchMagneticDeclination(latDeg, lngDeg) {
-  try {
-    magDecl = computeMagneticDeclination(latDeg, lngDeg, elevation || 0);
-    if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
-  } catch {
-    magDecl = simpleMagDecl(latDeg, lngDeg);
-  }
-  updateDeclDisplay();
+  console.log('[magDecl] calcul pour', latDeg, lngDeg);
+
+  // Tentative via l'API NOAA (nécessite HTTPS et accès réseau)
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day   = now.getDate();
+  const url   = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
+                `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
+                `&startYear=${year}&startMonth=${month}&startDay=${day}` +
+                `&key=zNEw7&resultFormat=json`;
+
+  fetch(url)
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      const val = parseFloat(data.result[0].declination);
+      if (isNaN(val)) throw new Error('valeur invalide');
+      magDecl = val;
+      console.log('[magDecl] NOAA API =', magDecl);
+      updateDeclDisplay();
+    })
+    .catch(err => {
+      console.warn('[magDecl] API NOAA échouée (' + err.message + '), calcul local WMM2025');
+      // Fallback : calcul local WMM2025 embarqué
+      try {
+        magDecl = computeMagneticDeclination(latDeg, lngDeg, elevation || 0);
+        if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
+        console.log('[magDecl] WMM2025 local =', magDecl);
+      } catch(e) {
+        magDecl = simpleMagDecl(latDeg, lngDeg);
+        console.log('[magDecl] fallback simplifié =', magDecl);
+      }
+      updateDeclDisplay();
+    });
 }
 
 // Approximation analytique basée sur le WMM 2020-2025
@@ -1595,8 +1625,10 @@ function simpleMagDecl(latDeg, lngDeg) {
 }
 
 function updateDeclDisplay() {
+  console.log('[updateDeclDisplay] magDecl=', magDecl);
   const el = document.getElementById('decl-val');
   const st = document.getElementById('decl-status');
+  console.log('[updateDeclDisplay] el=', el, 'st=', st);
   if (!el) return;
   if (magDecl === null) {
     el.textContent = '---';
@@ -1684,10 +1716,10 @@ function updateGPS(position) {
   elevation = position.coords.altitude;
   const acc = position.coords.accuracy;
 
-  document.getElementById('lat-val').textContent = dms(lat) + (lat >= 0 ? ' N' : ' S');
-  document.getElementById('lng-val').textContent = dms(Math.abs(lng)) + (lng >= 0 ? ' E' : ' O');
-  document.getElementById('elev-val').textContent = elevation ? Math.round(elevation) : '---';
-  document.getElementById('acc-val').textContent = Math.round(acc);
+  setText('lat-val',  dms(lat) + (lat >= 0 ? ' N' : ' S'));
+  setText('lng-val',  dms(Math.abs(lng)) + (lng >= 0 ? ' E' : ' O'));
+  setText('elev-val', elevation ? Math.round(elevation) : '---');
+  setText('acc-val',  Math.round(acc));
 
   const st = document.getElementById('gps-status');
   if (acc < 30) {
@@ -1699,8 +1731,9 @@ function updateGPS(position) {
   }
 
   // Update altitude target
-  document.getElementById('alt-target-val').textContent = lat.toFixed(2) + '°';
-  // Déclinaison magnétique — recalculer si la position a changé significativement
+  document.getElementById('alt-val-target-label').textContent = lat.toFixed(2) + '°';
+  // Déclinaison magnétique
+  console.log('[GPS] position acquise, lat=', lat, 'lng=', lng);
   fetchMagneticDeclination(lat, lng);
   updatePolarisDisplay();
   updateCorrections();
@@ -1971,7 +2004,14 @@ function updateCorrections() {
   updateWizard();
 }
 
-// ─── Guided Wizard ───────────────────────────────────────────────
+// Helper sécurisé — ne plante jamais si l'élément est absent
+function $id(id) {
+  const el = document.getElementById(id);
+  if (!el) console.warn('[DOM] élément introuvable:', id);
+  return el;
+}
+function setText(id, val) { const e = $id(id); if (e) e.textContent = val; }
+function setStyle(id, prop, val) { const e = $id(id); if (e) e.style[prop] = val; }
 let currentStep = 0;
 const stepsDone = [false, false, false, false];
 
@@ -2072,6 +2112,34 @@ function updateStepNS(v) {
     document.getElementById('btn-val-ns').className = 'btn-nav primary';
   }
 
+}
+
+function initWizAltGauge() {
+  const ticks = [0, 15, 30, 45, 60, 75, 90];
+  const ids   = ['wgl-0','wgl-15','wgl-30','wgl-45','wgl-60','wgl-75','wgl-90'];
+  const svg   = document.getElementById('wiz-alt-gauge');
+  if (!svg) return;
+  ticks.forEach((a, i) => {
+    const isMajor = (a % 30 === 0);
+    const pInner  = altPt(a, AG.R - (isMajor ? 10 : 6));
+    const pOuter  = altPt(a, AG.R + (isMajor ? 10 : 6));
+    const pLabel  = altPt(a, AG.R + 24);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', pInner.x.toFixed(1));
+    line.setAttribute('y1', pInner.y.toFixed(1));
+    line.setAttribute('x2', pOuter.x.toFixed(1));
+    line.setAttribute('y2', pOuter.y.toFixed(1));
+    line.setAttribute('stroke', isMajor ? 'rgba(80,160,255,0.5)' : 'rgba(80,160,255,0.25)');
+    line.setAttribute('stroke-width', isMajor ? '2' : '1');
+    svg.insertBefore(line, svg.firstChild);
+    const el = document.getElementById(ids[i]);
+    if (!el) return;
+    let lx = pLabel.x, ly = pLabel.y + 4;
+    if (a === 0)  { lx += 4; }
+    if (a === 90) { ly -= 4; }
+    el.setAttribute('x', lx.toFixed(1));
+    el.setAttribute('y', ly.toFixed(1));
+  });
 }
 
 function updateWizAltGauge(currentAlt, targetAlt) {
@@ -2399,14 +2467,15 @@ function stopSensors() {
 // ─── Demo / Simulation ───────────────────────────────────────────
 function simulateParis() {
   lat = 48.8566; lng = 2.3522; elevation = 35;
-  document.getElementById('lat-val').textContent = dms(lat) + ' N';
-  document.getElementById('lng-val').textContent = dms(lng) + ' E';
-  document.getElementById('elev-val').textContent = Math.round(elevation);
-  document.getElementById('acc-val').textContent = '(démo)';
-  document.getElementById('alt-target-val').textContent = lat.toFixed(2) + '°';
+  setText('lat-val',  dms(lat) + ' N');
+  setText('lng-val',  dms(lng) + ' E');
+  setText('elev-val', Math.round(elevation));
+  setText('acc-val',  '(démo)');
+  document.getElementById('alt-val-target-label').textContent = lat.toFixed(2) + '°';
   const st = document.getElementById('gps-status');
   st.className = 'status-badge status-warn';
   st.innerHTML = '<div class="dot"></div> Mode démo (Paris)';
+  fetchMagneticDeclination(lat, lng);
   updatePolarisDisplay();
 }
 
