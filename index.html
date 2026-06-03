@@ -1483,8 +1483,8 @@ let magDecl = null; // degrés, positif = Est, négatif = Ouest
 async function fetchMagneticDeclination(latDeg, lngDeg) {
   const year = new Date().getFullYear() + (new Date().getMonth() + 1) / 12;
   const url  = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
-               `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
-               `&startYear=${year.toFixed(2)}&resultFormat=json`;
+               `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}`+
+               `&key=zNEw7&resultFormat=json`;
   try {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
