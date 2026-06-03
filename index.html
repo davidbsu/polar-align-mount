@@ -986,6 +986,7 @@
     text-transform: uppercase;
     margin: 16px 0 6px;
   }
+</style>
 </head>
 <body>
 
@@ -1694,16 +1695,22 @@ function lpfAngle(prev, raw, alpha) {
 
 // ─── Throttled UI render loop (60 fps cap) ───────────────────────
 let _uiPending = false;
+// Valeurs filtrées brutes (état interne du filtre — sans étalonnage)
+let _fNS = 0, _fEO = 0;
+
 function scheduleUI() {
   if (_uiPending) return;
   _uiPending = true;
   requestAnimationFrame(() => {
     _uiPending = false;
-    // Appliquer les offsets d'étalonnage
-    tiltNS        = lpf(tiltNS,        _rawNS,      ALPHA_LEVEL) - calibNS;
-    tiltEO        = lpf(tiltEO,        _rawEO,      ALPHA_LEVEL) - calibEO;
+    // Filtrage sur les valeurs brutes (sans étalonnage pour éviter la dérive)
+    _fNS          = lpf(_fNS,          _rawNS,      ALPHA_LEVEL);
+    _fEO          = lpf(_fEO,          _rawEO,      ALPHA_LEVEL);
     heading       = lpfAngle(heading,  _rawHeading, ALPHA_HEADING);
     deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
+    // Appliquer les offsets d'étalonnage sur les valeurs affichées
+    tiltNS = _fNS - calibNS;
+    tiltEO = _fEO - calibEO;
     // Render
     updateLevelUI();
     updateAltitudeUI();
