@@ -1481,17 +1481,23 @@ const POLARIS_OFFSET = 0.6492;  // degrés depuis le pôle céleste nord
 let magDecl = null; // degrés, positif = Est, négatif = Ouest
 
 async function fetchMagneticDeclination(latDeg, lngDeg) {
-  const year = new Date().getFullYear() + (new Date().getMonth() + 1) / 12;
-  const url  = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
-               `? lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
-               `&key=zNEw7&resultFormat=json`;
+  const now   = new Date();
+  const year  = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day   = now.getDate();
+  const url   = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
+                `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
+                `&startYear=${year}&startMonth=${month}&startDay=${day}` +
+                `&key=zNEw7&resultFormat=json`;
   try {
     const resp = await fetch(url);
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
-    magDecl = data.result[0].declination;
+    // Réponse JSON : { result: [ { declination: X, ... } ] }
+    magDecl = parseFloat(data.result[0].declination);
+    if (isNaN(magDecl)) throw new Error('valeur invalide');
   } catch {
-    // Fallback : formule IGRF simplifiée (précision ~0.5° pour l'Europe/Amérique du Nord)
+    // Fallback hors ligne : formule WMM simplifiée
     magDecl = simpleMagDecl(latDeg, lngDeg);
   }
   updateDeclDisplay();
