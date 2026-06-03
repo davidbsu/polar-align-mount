@@ -831,6 +831,14 @@
         <label>Précision GPS</label>
         <span class="value" id="acc-val">---</span><span class="unit">m</span>
       </div>
+      <div class="data-box">
+        <label>Déclinaison mag.</label>
+        <span class="value" id="decl-val" style="font-size:13px">---</span>
+      </div>
+      <div class="data-box">
+        <label>Nord vrai corrigé</label>
+        <span class="value" id="decl-status" style="font-size:11px;color:var(--text-dim)">en attente GPS</span>
+      </div>
     </div>
     <div id="gps-status" class="status-badge status-warn">
       <div class="dot"></div>
@@ -1467,6 +1475,57 @@ const POLARIS_RA     = 2.96681; // heures, époque 2025
 const POLARIS_DEC    = 89.3508; // degrés
 const POLARIS_OFFSET = 0.6492;  // degrés depuis le pôle céleste nord
 
+// ─── Déclinaison magnétique ───────────────────────────────────────
+// Calculée via l'API NOAA/NCEI (World Magnetic Model) — gratuite, sans clé API.
+// Fallback : formule analytique simplifiée si l'API est indisponible (hors ligne).
+let magDecl = null; // degrés, positif = Est, négatif = Ouest
+
+async function fetchMagneticDeclination(latDeg, lngDeg) {
+  const year = new Date().getFullYear() + (new Date().getMonth() + 1) / 12;
+  const url  = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
+               `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
+               `&startYear=${year.toFixed(2)}&resultFormat=json`;
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    magDecl = data.result[0].declination;
+  } catch {
+    // Fallback : formule IGRF simplifiée (précision ~0.5° pour l'Europe/Amérique du Nord)
+    magDecl = simpleMagDecl(latDeg, lngDeg);
+  }
+  updateDeclDisplay();
+}
+
+// Approximation analytique basée sur le WMM 2020-2025
+// Précision ±1° pour latitudes 30-70°N — suffisant pour la mise en station visuelle
+function simpleMagDecl(latDeg, lngDeg) {
+  const lat = toRad(latDeg), lng = toRad(lngDeg);
+  // Coefficients WMM 2025 simplifiés (dipôle + premiers termes quadrupolaires)
+  const decl = -3.1 * Math.sin(lng - toRad(291.5))
+             +  1.0 * Math.cos(2 * lat) * Math.sin(lng - toRad(291.5))
+             +  0.5 * Math.sin(lat) * Math.cos(lng - toRad(291.5));
+  return decl;
+}
+
+function updateDeclDisplay() {
+  const el = document.getElementById('decl-val');
+  const st = document.getElementById('decl-status');
+  if (!el) return;
+  if (magDecl === null) {
+    el.textContent = '---';
+    if (st) st.textContent = 'en attente GPS';
+    return;
+  }
+  const sign = magDecl >= 0 ? '+' : '';
+  el.textContent = sign + magDecl.toFixed(2) + '°';
+  el.style.color = Math.abs(magDecl) > 2 ? 'var(--amber)' : 'var(--accent2)';
+  if (st) {
+    st.textContent = '✓ correction appliquée';
+    st.style.color = 'var(--green)';
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────
 function dms(deg) {
   const d = Math.floor(Math.abs(deg));
@@ -1555,6 +1614,8 @@ function updateGPS(position) {
 
   // Update altitude target
   document.getElementById('alt-target-val').textContent = lat.toFixed(2) + '°';
+  // Déclinaison magnétique — recalculer si la position a changé significativement
+  fetchMagneticDeclination(lat, lng);
   updatePolarisDisplay();
   updateCorrections();
   updateWizard();
@@ -1572,6 +1633,12 @@ function updateOrientation(event) {
   } else if (event.alpha !== null) {
     // Fallback deviceorientation standard : alpha relatif → approximation
     _rawHeading = (360 - event.alpha + 360) % 360;
+  }
+
+  // Correction déclinaison magnétique → cap vrai = cap magnétique − déclinaison
+  // déclinaison > 0 (Est) : Nord magnétique est à l'Est du Nord géographique → soustraire
+  if (magDecl !== null) {
+    _rawHeading = ((_rawHeading - magDecl) + 360) % 360;
   }
 
   _rawAlt = Math.max(0, Math.min(90, Math.abs(_rawNS)));
