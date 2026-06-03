@@ -18,7 +18,7 @@ A menu is also available, with three possible settings:
 
 
 
-This version works on both iOS and Android phones. It is a WPA (Web Progressive App) that you can add to your home screen like an app downloaded from an app store.
+This version works on both iOS and Android phones. It is a PWA (Progressive Web App) that you can add to your home screen like an app downloaded from an app store.
 
 On iPhone with Safari:
 
@@ -68,7 +68,7 @@ Un menu est également disponible, avec trois paramétrages possibles :
 
 
 
-Cette version fonctionne aussi bien sur téléphone iOS que Android. C'est une WPA (Web Progressive App) que vous pouvez ajouter à votre écran d'accueil comme une app téléchargée sur un store.
+Cette version fonctionne aussi bien sur téléphone iOS que Android. C'est une PWA (Progressive Web App) que vous pouvez ajouter à votre écran d'accueil comme une app téléchargée sur un store.
 
 Sur iPhone avec Safari :
 
