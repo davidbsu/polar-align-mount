@@ -800,9 +800,253 @@
     .polar-scope { width: 170px; height: 170px; }
     .alt-value { font-size: 22px; }
   }
-</style>
+
+  /* ══ Mode nuit ══ */
+  body.night-mode {
+    --bg: #000000;
+    --bg2: #0a0000;
+    --panel: rgba(15, 0, 0, 0.95);
+    --border: rgba(180, 30, 30, 0.25);
+    --accent: #cc2200;
+    --accent2: #ff4400;
+    --green: #ff6600;
+    --red: #ff2200;
+    --amber: #ff3300;
+    --text: #ff9980;
+    --text-dim: #7a2a1a;
+    --glow: 0 0 20px rgba(200, 30, 0, 0.4);
+    --glow-green: 0 0 16px rgba(255, 80, 0, 0.5);
+    --glow-red: 0 0 16px rgba(255, 20, 0, 0.5);
+  }
+  body.night-mode::before { display: none; }
+  body.night-mode .header h1 {
+    color: #ff4400;
+    text-shadow: 0 0 30px rgba(255,60,0,0.6), 0 0 60px rgba(255,30,0,0.2);
+  }
+  body.night-mode #reticle-svg {
+    background: radial-gradient(circle, #0d0000 0%, #050000 70%, #000 100%) !important;
+  }
+
+  /* ══ Hamburger button ══ */
+  .hamburger {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1000;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    cursor: pointer;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--glow);
+  }
+  .hamburger span {
+    display: block;
+    width: 18px;
+    height: 1.5px;
+    background: var(--accent2);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; }
+  .hamburger.open span:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+  /* ══ Offcanvas ══ */
+  .offcanvas-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 900;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    backdrop-filter: blur(2px);
+  }
+  .offcanvas-overlay.open { opacity: 1; pointer-events: all; }
+
+  .offcanvas {
+    position: fixed;
+    top: 0;
+    right: -320px;
+    width: 300px;
+    height: 100vh;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    z-index: 950;
+    transition: right 0.3s ease;
+    padding: 24px 20px;
+    overflow-y: auto;
+    box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+  }
+  .offcanvas.open { right: 0; }
+
+  .offcanvas-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(80,160,255,0.07);
+  }
+  .setting-label {
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .setting-sub {
+    font-size: 9px;
+    color: var(--text-dim);
+    margin-top: 3px;
+  }
+
+  /* Toggle switch */
+  .toggle {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .toggle input { display: none; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 13px;
+    background: rgba(80,80,80,0.4);
+    border: 1px solid var(--border);
+    transition: background 0.3s;
+    cursor: pointer;
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    transition: transform 0.3s;
+    pointer-events: none;
+  }
+  /* Stepper +/- */
+  .stepper {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .stepper-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+    color: var(--accent2);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+  .stepper-btn:active { background: rgba(58,143,255,0.2); }
+  .stepper-val {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    color: var(--accent2);
+    min-width: 48px;
+    text-align: center;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 4px 6px;
+  }
+  .setting-section {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin: 16px 0 6px;
+  }
 </head>
 <body>
+
+<!-- Hamburger -->
+<button class="hamburger" id="hamburger-btn" onclick="toggleOffcanvas()">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- Overlay -->
+<div class="offcanvas-overlay" id="offcanvas-overlay" onclick="closeOffcanvas()"></div>
+
+<!-- Offcanvas panel -->
+<div class="offcanvas" id="offcanvas-panel">
+  <div class="offcanvas-title">⚙ Réglages</div>
+
+  <!-- Réglage 1 : Mode nuit -->
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🌙 Mode nuit</div>
+      <div class="setting-sub">Thème rouge — préserve la vision nocturne</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="night-mode-toggle" onchange="toggleNightMode(this.checked)">
+      <div class="toggle-track"></div>
+      <div class="toggle-thumb"></div>
+    </label>
+  </div>
+
+  <!-- Réglage 2 : Étalonnage niveau à bulle -->
+  <div style="padding:14px 0;border-bottom:1px solid rgba(80,160,255,0.07)">
+    <div class="setting-label">⚖️ Étalonnage niveau à bulle</div>
+    <div class="setting-sub" style="margin-bottom:12px">Correction d'offset ±2° — pas 0.1°</div>
+
+    <div class="setting-section">Inclinaison N-S</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="setting-sub">Offset N-S</div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustCalib('ns', -0.1)">−</button>
+        <div class="stepper-val" id="calib-ns-val">0.0°</div>
+        <button class="stepper-btn" onclick="adjustCalib('ns', +0.1)">+</button>
+      </div>
+    </div>
+
+    <div class="setting-section">Inclinaison E-O</div>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div class="setting-sub">Offset E-O</div>
+      <div class="stepper">
+        <button class="stepper-btn" onclick="adjustCalib('eo', -0.1)">−</button>
+        <div class="stepper-val" id="calib-eo-val">0.0°</div>
+        <button class="stepper-btn" onclick="adjustCalib('eo', +0.1)">+</button>
+      </div>
+    </div>
+
+    <button onclick="resetCalib()" style="margin-top:12px;width:100%;padding:8px;border-radius:8px;
+      border:1px solid var(--border);background:rgba(0,0,0,0.3);color:var(--text-dim);
+      font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;cursor:pointer">
+      RÉINITIALISER
+    </button>
+  </div>
+
+</div>
 <div class="app">
 
   <!-- Header -->
@@ -1455,9 +1699,9 @@ function scheduleUI() {
   _uiPending = true;
   requestAnimationFrame(() => {
     _uiPending = false;
-    // Apply filter step
-    tiltNS        = lpf(tiltNS,        _rawNS,      ALPHA_LEVEL);
-    tiltEO        = lpf(tiltEO,        _rawEO,      ALPHA_LEVEL);
+    // Appliquer les offsets d'étalonnage
+    tiltNS        = lpf(tiltNS,        _rawNS,      ALPHA_LEVEL) - calibNS;
+    tiltEO        = lpf(tiltEO,        _rawEO,      ALPHA_LEVEL) - calibEO;
     heading       = lpfAngle(heading,  _rawHeading, ALPHA_HEADING);
     deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
     // Render
@@ -2004,7 +2248,48 @@ function updateCorrections() {
   updateWizard();
 }
 
-// Helper sécurisé — ne plante jamais si l'élément est absent
+// ─── Étalonnage niveau à bulle ────────────────────────────────────
+let calibNS = 0, calibEO = 0; // offsets en degrés
+
+function adjustCalib(axis, delta) {
+  if (axis === 'ns') {
+    calibNS = Math.round(Math.max(-2, Math.min(2, calibNS + delta)) * 10) / 10;
+    setText('calib-ns-val', (calibNS >= 0 ? '+' : '') + calibNS.toFixed(1) + '°');
+  } else {
+    calibEO = Math.round(Math.max(-2, Math.min(2, calibEO + delta)) * 10) / 10;
+    setText('calib-eo-val', (calibEO >= 0 ? '+' : '') + calibEO.toFixed(1) + '°');
+  }
+}
+
+function resetCalib() {
+  calibNS = 0; calibEO = 0;
+  setText('calib-ns-val', '0.0°');
+  setText('calib-eo-val', '0.0°');
+}
+
+// ─── Offcanvas ────────────────────────────────────────────────────
+function toggleOffcanvas() {
+  const panel   = document.getElementById('offcanvas-panel');
+  const overlay = document.getElementById('offcanvas-overlay');
+  const btn     = document.getElementById('hamburger-btn');
+  const isOpen  = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  overlay.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+function closeOffcanvas() {
+  document.getElementById('offcanvas-panel').classList.remove('open');
+  document.getElementById('offcanvas-overlay').classList.remove('open');
+  document.getElementById('hamburger-btn').classList.remove('open');
+}
+
+// ─── Mode nuit ────────────────────────────────────────────────────
+function toggleNightMode(on) {
+  document.body.classList.toggle('night-mode', on);
+}
+
+// ─── Helper sécurisé — ne plante jamais si l'élément est absent
 function $id(id) {
   const el = document.getElementById(id);
   if (!el) console.warn('[DOM] élément introuvable:', id);
