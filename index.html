@@ -1487,7 +1487,6 @@ async function fetchMagneticDeclination(latDeg, lngDeg) {
   const day   = now.getDate();
   const url   = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
                 `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
-                `&startYear=${year}&startMonth=${month}&startDay=${day}` +
                 `&key=zNEw7&resultFormat=json`;
   try {
     const resp = await fetch(url);
