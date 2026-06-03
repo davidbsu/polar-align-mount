@@ -12,8 +12,10 @@ David
 
 hello
 
-voici la dernière version de mon appli polar align mount créée par intelligence artificielle (claude AI).
+Voici la dernière version de mon appli "polar align mount" créée par intelligence artificielle (claude AI).
+
 Elle permet d'utiliser le gps et le gyroscope de son portable pour réaliser la mise en station d'une monture équatoriale.
+
 Cette version fonctionne aussi bien sur téléphone iOS que Android.
 
 David
