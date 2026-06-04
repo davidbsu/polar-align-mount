@@ -42,6 +42,31 @@ On Android with Chrome:
 4. Confirm the name and then tap "Add"
 
 
+This application downloads its code into your browser's cache (Safari/Chrome) so it can function offline (useful if you're in an area without network coverage).
+
+To clear the Service Worker cache:
+
+On iPhone (Safari)
+
+1. Settings → Safari → Advanced → Website Data
+
+2. Find your GitHub Pages domain and tap Delete
+
+Or, for a more drastic approach:
+Settings → Safari → Clear History and Data
+
+On Android (Chrome)
+
+1. Chrome settings → Site settings → Storage
+
+2. Find your domain and tap Clear & reset
+
+Or:
+
+Chrome settings → Privacy → Clear browsing data → check "Cached images and files"
+
+In both cases, the next time you go online, the app will automatically reload and rebuild the cache—it will be available offline again after this initial reload.
+
 
 Hope you enjoy this app.
 
@@ -90,6 +115,34 @@ Sur Android avec Chrome :
 3. Appuyez sur "Ajouter à l'écran d'accueil"
 
 4. Confirmez le nom puis appuyez sur "Ajouter"
+
+
+
+Cette application télécharge son code dans le cache de votre navigateur (Safari/Chrome) pour pouvoir fonctionner en mode "hors ligne" (pratique si vous êtes dans une zone sans réseau).
+
+Pour supprimer le cache du Service Worker :
+
+Sur iPhone (Safari)
+
+1. Réglages → Safari → Avancé → Données des sites web
+
+2. Cherchez votre domaine GitHub Pages et appuyez sur Supprimer
+
+Ou plus radical :
+Réglages → Safari → Effacer l'historique et les données
+
+Sur Android (Chrome)
+
+1. Paramètres Chrome → Site settings → Storage
+
+2. Cherchez votre domaine et appuyez sur Clear & reset
+
+Ou :
+
+Paramètres Chrome → Confidentialité → Effacer les données de navigation → cochez "Images et fichiers en cache"
+
+
+Dans les deux cas, la prochaine visite en ligne rechargera et recréera le cache automatiquement — l'app redeviendra disponible hors ligne après ce premier rechargement.
 
 
 
