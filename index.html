@@ -6,6 +6,30 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Polar Align">
 <meta name="theme-color" content="#06090f">
+<script>
+// Manifest PWA inline
+const manifest = {
+  name: 'Polar Align',
+  short_name: 'PolarAlign',
+  description: 'Mise en station monture équatoriale',
+  start_url: './',
+  display: 'standalone',
+  background_color: '#06090f',
+  theme_color: '#06090f',
+  orientation: 'portrait',
+  icons: [{
+    src: 'https://thedavidsuniverse.fr/images/polar-align-mount.png',
+    sizes: '180x180',
+    type: 'image/png',
+    purpose: 'any maskable'
+  }]
+};
+const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
+const mUrl  = URL.createObjectURL(mBlob);
+const mLink = document.createElement('link');
+mLink.rel = 'manifest'; mLink.href = mUrl;
+document.head.appendChild(mLink);
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PolAlign — Mise en Station</title>
 <style>
@@ -2977,6 +3001,13 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWizAltGauge(0, 0);
   // Init reticle SA Console (centre 150,150, r=62, HA=0 → y=150-62=88)
   document.getElementById('polaris-core').setAttribute('cy', 240);
+
+  // ─── Service Worker (cache offline) ─────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(() => console.log('[SW] Service Worker enregistré — app disponible hors ligne'))
+      .catch(e => console.warn('[SW] Echec enregistrement:', e));
+  }
 });
 </script>
 </body>
