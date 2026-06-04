@@ -123,7 +123,34 @@ document.head.appendChild(mLink);
     color: var(--text-dim);
     text-transform: uppercase;
     margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
   }
+  .panel-title:hover { color: var(--text); }
+  .panel-toggle {
+    font-size: 8px;
+    color: var(--text-dim);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+    margin-left: 8px;
+  }
+  .panel-title.collapsed .panel-toggle { transform: rotate(180deg); }
+  .panel-body {
+    overflow: hidden;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+  }
+  .panel-body.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+  /* Quand le panneau est réduit, supprimer le margin-bottom du titre */
+  .panel-title.collapsed { margin-bottom: 0; }
 
   /* GPS Section */
   .gps-grid {
@@ -1201,7 +1228,8 @@ document.head.appendChild(mLink);
 
   <!-- GPS Panel -->
   <div class="panel">
-    <div class="panel-title">📍 Localisation GPS</div>
+    <div class="panel-title" onclick="togglePanel(this)">📍 Localisation GPS<span class="panel-toggle">▲</span></div>
+    <div class="panel-body">
     <div class="gps-grid">
       <div class="data-box">
         <label>Latitude</label>
@@ -1232,11 +1260,13 @@ document.head.appendChild(mLink);
       <div class="dot"></div>
       En attente du GPS
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Niveau / Horizontalité -->
   <div class="panel">
-    <div class="panel-title">⚖️ Horizontalité de la monture</div>
+    <div class="panel-title" onclick="togglePanel(this)">⚖️ Horizontalité de la monture<span class="panel-toggle">▲</span></div>
+    <div class="panel-body">
     <div class="scope-container">
       <div class="bubble-2d" id="bubble2d">
         <div class="bubble-2d-inner" id="bubble2d-inner" style="left:50%;top:50%;"></div>
@@ -1275,11 +1305,13 @@ document.head.appendChild(mLink);
         Hors niveau
       </div>
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Altitude polaire -->
   <div class="panel">
-    <div class="panel-title">🌟 Altitude polaire (axe A.R.)</div>
+    <div class="panel-title" onclick="togglePanel(this)">🌟 Altitude polaire (axe A.R.)<span class="panel-toggle">▲</span></div>
+    <div class="panel-body">
 
     <!-- Arc gauge 0–90° -->
     <!--
@@ -1336,11 +1368,13 @@ document.head.appendChild(mLink);
         <div class="precision-fill" id="alt-prec-bar" style="width:0%;background:var(--red)"></div>
       </div>
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Azimuth -->
   <div class="panel">
-    <div class="panel-title">🧭 Azimut — Pointage vers le Nord</div>
+    <div class="panel-title" onclick="togglePanel(this)">🧭 Azimut — Pointage vers le Nord<span class="panel-toggle">▲</span></div>
+    <div class="panel-body">
     <div style="display:flex;align-items:center;gap:16px">
       <div class="azimuth-guide">
         <svg class="compass-svg" viewBox="0 0 120 120" width="100" height="100">
@@ -1372,14 +1406,16 @@ document.head.appendChild(mLink);
         <div style="font-family:'Orbitron',sans-serif;font-size:14px" id="azimuth-corr">---</div>
       </div>
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Polaris dans viseur -->
   <div class="panel">
-    <div class="panel-title" style="display:flex;align-items:center;justify-content:space-between">
+    <div class="panel-title" onclick="togglePanel(this)">
       <span>🔭 Position de Polaris</span>
-      <span style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent2);letter-spacing:2px" id="polaris-pos-val">--:--</span>
+      <span style="font-family:'Orbitron',sans-serif;font-size:13px;color:var(--accent2);letter-spacing:2px" id="polaris-pos-val">--:--</span><span class="panel-toggle">▲</span>
     </div>
+    <div class="panel-body">
     <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
 
       <!-- SVG Réticule style SA Console : cadran d'horloge minimaliste
@@ -1629,11 +1665,13 @@ document.head.appendChild(mLink);
         <div class="precision-fill" id="global-prec-bar" style="width:0%;background:var(--red)"></div>
       </div>
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Guided Correction Wizard -->
   <div class="panel" id="wizard-panel">
-    <div class="panel-title">🎯 Assistant de mise en station</div>
+    <div class="panel-title" onclick="togglePanel(this)">🎯 Assistant de mise en station<span class="panel-toggle">▲</span></div>
+    <div class="panel-body">
 
     <!-- Step indicators -->
     <div class="wizard-steps">
@@ -1795,7 +1833,8 @@ document.head.appendChild(mLink);
         <button class="btn-nav primary" onclick="resetWizard()">↺ Recommencer</button>
       </div>
     </div>
-  </div>
+  
+    </div></div>
 
   <!-- Start button -->
   <button class="btn-start" id="btn-start" onclick="toggleSensors()">
@@ -2471,6 +2510,15 @@ function resetCalib() {
   calibNS = 0; calibEO = 0;
   setText('calib-ns-val', '0.0°');
   setText('calib-eo-val', '0.0°');
+}
+
+// ─── Panneaux rétractables ────────────────────────────────────────
+function togglePanel(titleEl) {
+  titleEl.classList.toggle('collapsed');
+  const body = titleEl.nextElementSibling;
+  if (body && body.classList.contains('panel-body')) {
+    body.classList.toggle('collapsed');
+  }
 }
 
 // ─── Offcanvas ────────────────────────────────────────────────────
