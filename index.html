@@ -2039,14 +2039,15 @@ function computeMagneticDeclination(latDeg, lngDeg, altM) {
 }
 
 function fetchMagneticDeclination(latDeg, lngDeg) {
+  console.log('[magDecl] fetchMagneticDeclination appelée, lat=', latDeg, 'lng=', lngDeg);
   try {
     magDecl = computeMagneticDeclination(latDeg, lngDeg);
+    console.log('[magDecl] résultat =', magDecl);
     if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
   } catch(e) {
-    console.warn('[magDecl] erreur WMM2025:', e.message);
+    console.warn('[magDecl] erreur:', e.message);
     magDecl = 0;
   }
-  console.log('[magDecl] WMM2025 =', magDecl.toFixed(3) + '°');
   updateDeclDisplay();
 }
 
