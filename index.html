@@ -2012,61 +2012,20 @@ function computeMagneticDeclination(latDeg, lngDeg, altM) {
 }
 
 function fetchMagneticDeclination(latDeg, lngDeg) {
-  console.log('[magDecl] calcul pour', latDeg, lngDeg);
-
-  // Tentative via l'API NOAA (nécessite HTTPS et accès réseau)
-  const now   = new Date();
-  const year  = now.getFullYear();
-  const month = now.getMonth() + 1;
-  const day   = now.getDate();
-  const url   = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
-                `?lat1=${latDeg.toFixed(4)}&lon1=${lngDeg.toFixed(4)}` +
-                `&startYear=${year}&startMonth=${month}&startDay=${day}` +
-                `&key=zNEw7&resultFormat=json`;
-
-  fetch(url)
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
-    })
-    .then(data => {
-      const val = parseFloat(data.result[0].declination);
-      if (isNaN(val)) throw new Error('valeur invalide');
-      magDecl = val;
-      console.log('[magDecl] NOAA API =', magDecl);
-      updateDeclDisplay();
-    })
-    .catch(err => {
-      console.warn('[magDecl] API NOAA échouée (' + err.message + '), calcul local WMM2025');
-      // Fallback : calcul local WMM2025 embarqué
-      try {
-        magDecl = computeMagneticDeclination(latDeg, lngDeg, elevation || 0);
-        if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
-        console.log('[magDecl] WMM2025 local =', magDecl);
-      } catch(e) {
-        magDecl = simpleMagDecl(latDeg, lngDeg);
-        console.log('[magDecl] fallback simplifié =', magDecl);
-      }
-      updateDeclDisplay();
-    });
-}
-
-// Approximation analytique basée sur le WMM 2020-2025
-// Précision ±1° pour latitudes 30-70°N — suffisant pour la mise en station visuelle
-function simpleMagDecl(latDeg, lngDeg) {
-  const lat = toRad(latDeg), lng = toRad(lngDeg);
-  // Coefficients WMM 2025 simplifiés (dipôle + premiers termes quadrupolaires)
-  const decl = -3.1 * Math.sin(lng - toRad(291.5))
-             +  1.0 * Math.cos(2 * lat) * Math.sin(lng - toRad(291.5))
-             +  0.5 * Math.sin(lat) * Math.cos(lng - toRad(291.5));
-  return decl;
+  try {
+    magDecl = computeMagneticDeclination(latDeg, lngDeg, elevation || 0);
+    if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
+  } catch(e) {
+    console.warn('[magDecl] erreur WMM2025:', e.message);
+    magDecl = 0;
+  }
+  console.log('[magDecl] WMM2025 =', magDecl.toFixed(3) + '°');
+  updateDeclDisplay();
 }
 
 function updateDeclDisplay() {
-  console.log('[updateDeclDisplay] magDecl=', magDecl);
   const el = document.getElementById('decl-val');
   const st = document.getElementById('decl-status');
-  console.log('[updateDeclDisplay] el=', el, 'st=', st);
   if (!el) return;
   if (magDecl === null) {
     el.textContent = '---';
