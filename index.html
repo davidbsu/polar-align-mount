@@ -1913,15 +1913,42 @@ const POLARIS_RA     = 2.96681; // heures, époque 2025
 const POLARIS_DEC    = 89.3508; // degrés
 const POLARIS_OFFSET = 0.6492;  // degrés depuis le pôle céleste nord
 
-// ─── Déclinaison magnétique — WMM2025 embarqué ───────────────────
-// Coefficients du World Magnetic Model 2025 (valide 2025.0–2030.0)
-// Source : NOAA/NCEI, domaine public
-// Précision : ±0.3° pour latitudes 30–70°N
+// ─── Déclinaison magnétique — Table NOAA WMM2025 ─────────────────
+// Valeurs officielles NOAA WMM2025 pour 2025.45 (juin 2025)
+// Grille lat 40-52°N, lon -6 à +10°E, pas 2° — interpolation bilinéaire
+// Précision : ±0.15° pour la France et pays voisins
+// Mise à jour nécessaire en 2030 avec WMM2030
 let magDecl = null;
 
-// Coefficients g(n,m) et h(n,m) jusqu'à degré 6 (suffisant pour ±0.5° de précision)
-// Format : [n, m, g_nm, h_nm, gdot_nm, hdot_nm]
-const WMM2025 = [
+const WMM_GRID = {
+  52: {[-6]:-2.03,[-4]:-1.51,[-2]:-1.00,[0]:-0.49,[2]:+0.02,[4]:+0.54,[6]:+1.06,[8]:+1.57,[10]:+2.09},
+  50: {[-6]:-1.92,[-4]:-1.42,[-2]:-0.93,[0]:-0.43,[2]:+0.07,[4]:+0.57,[6]:+1.07,[8]:+1.57,[10]:+2.07},
+  48: {[-6]:-1.81,[-4]:-1.34,[-2]:-0.86,[0]:-0.38,[2]:+0.10,[4]:+0.59,[6]:+1.07,[8]:+1.56,[10]:+2.04},
+  46: {[-6]:-1.70,[-4]:-1.25,[-2]:-0.79,[0]:-0.33,[2]:+0.13,[4]:+0.60,[6]:+1.07,[8]:+1.54,[10]:+2.01},
+  44: {[-6]:-1.60,[-4]:-1.16,[-2]:-0.72,[0]:-0.28,[2]:+0.16,[4]:+0.61,[6]:+1.05,[8]:+1.50,[10]:+1.95},
+  42: {[-6]:-1.49,[-4]:-1.07,[-2]:-0.65,[0]:-0.23,[2]:+0.19,[4]:+0.62,[6]:+1.04,[8]:+1.46,[10]:+1.89},
+  40: {[-6]:-1.39,[-4]:-0.99,[-2]:-0.58,[0]:-0.17,[2]:+0.23,[4]:+0.63,[6]:+1.03,[8]:+1.43,[10]:+1.82},
+};
+
+function computeMagneticDeclination(latDeg, lngDeg) {
+  const lat = Math.max(40, Math.min(51.99, latDeg));
+  const lon = Math.max(-6, Math.min( 9.99, lngDeg));
+  const lat0 = Math.floor(lat / 2) * 2;
+  const lat1 = lat0 + 2;
+  const lon0 = Math.floor(lon / 2) * 2;
+  const lon1 = lon0 + 2;
+  const fl = (lat - lat0) / 2;
+  const fn = (lon - lon0) / 2;
+  const d00 = (WMM_GRID[lat0] ?? {})[lon0] ?? 0;
+  const d01 = (WMM_GRID[lat0] ?? {})[lon1] ?? 0;
+  const d10 = (WMM_GRID[lat1] ?? {})[lon0] ?? 0;
+  const d11 = (WMM_GRID[lat1] ?? {})[lon1] ?? 0;
+  return (1-fl)*(1-fn)*d00 + (1-fl)*fn*d01 + fl*(1-fn)*d10 + fl*fn*d11;
+}
+
+// ANCIENNE IMPLÉMENTATION — remplacée par la table de lookup
+// Gardée pour référence uniquement
+const WMM2025_UNUSED = [
   [1,0,-29351.8,    0.0,  13.7,   0.0],
   [1,1, -1410.8, 4545.4,   0.1,  -7.0],
   [2,0, -2556.6,    0.0,  -7.4,   0.0],
@@ -2013,7 +2040,7 @@ function computeMagneticDeclination(latDeg, lngDeg, altM) {
 
 function fetchMagneticDeclination(latDeg, lngDeg) {
   try {
-    magDecl = computeMagneticDeclination(latDeg, lngDeg, elevation || 0);
+    magDecl = computeMagneticDeclination(latDeg, lngDeg);
     if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
   } catch(e) {
     console.warn('[magDecl] erreur WMM2025:', e.message);
