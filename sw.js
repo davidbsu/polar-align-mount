@@ -1,4 +1,4 @@
-const CACHE = 'polar-align-v1.0.2';
+const CACHE = 'polar-align-v1.0.3';
 
 self.addEventListener('install', e => {
   e.waitUntil(
