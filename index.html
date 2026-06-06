@@ -2543,11 +2543,23 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWizAltGauge(0, 0);
   document.getElementById('polaris-core').setAttribute('cy', 240);
 
-  // Service Worker
+  // Service Worker + rechargement automatique si nouvelle version détectée
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(() => console.log('[SW] Service Worker enregistré — app disponible hors ligne'))
+      .then(reg => {
+        console.log('[SW] Service Worker enregistré — app disponible hors ligne');
+        // Vérifier les mises à jour au démarrage
+        reg.update();
+      })
       .catch(e => console.warn('[SW] Echec enregistrement:', e));
+
+    // Recharger la page quand le SW signale une mise à jour
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data && e.data.type === 'SW_UPDATED') {
+        console.log('[SW] Nouvelle version détectée, rechargement...');
+        window.location.reload();
+      }
+    });
   }
 });
 
