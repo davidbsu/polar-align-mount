@@ -1,5 +1,4 @@
-const CACHE = 'polar-align-v1.0.5';
-const VERSION = 'v1.0.5';
+const CACHE = 'polar-align-v1.0.6';
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -22,13 +21,6 @@ self.addEventListener('activate', e => {
         });
       })
   );
-});
-
-// Répondre aux messages de l'application
-self.addEventListener('message', e => {
-  if (e.data && e.data.type === 'GET_VERSION') {
-    e.source.postMessage({ type: 'SW_VERSION', version: VERSION });
-  }
 });
 
 self.addEventListener('fetch', e => {
