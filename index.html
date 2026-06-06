@@ -1165,8 +1165,7 @@ document.head.appendChild(mLink);
 
       <!-- Option 1 : Auto -->
       <label class="radio-option">
-        <input type="radio" name="pole-method" value="auto" checked
-               onchange="setPoleMethod('auto')">
+        <input type="radio" name="pole-method" value="auto" checked>
         <div class="radio-dot"></div>
         <div>
           <div class="radio-label">Pôle Nord Céleste (auto)</div>
@@ -1176,8 +1175,7 @@ document.head.appendChild(mLink);
 
       <!-- Option 2 : Manuel -->
       <label class="radio-option">
-        <input type="radio" name="pole-method" value="manual"
-               onchange="setPoleMethod('manual')">
+        <input type="radio" name="pole-method" value="manual">
         <div class="radio-dot"></div>
         <div>
           <div class="radio-label">Pôle Nord Céleste (manuel)</div>
@@ -1188,15 +1186,13 @@ document.head.appendChild(mLink);
       <!-- Champ de saisie manuelle -->
       <div class="manual-input-row" id="manual-decl-row">
         <label>Déclinaison :</label>
-        <input type="number" id="manual-decl-input" value="0.00" step="0.01"
-               min="-90" max="90" oninput="applyManualDecl(this.value)">
+        <input type="number" id="manual-decl-input" value="0.00" step="0.01" min="-90" max="90">
         <span>°</span>
       </div>
 
       <!-- Option 3 : Magnétique -->
       <label class="radio-option">
-        <input type="radio" name="pole-method" value="magnetic"
-               onchange="setPoleMethod('magnetic')">
+        <input type="radio" name="pole-method" value="magnetic">
         <div class="radio-dot"></div>
         <div>
           <div class="radio-label">Conserver le Pôle Nord Magnétique</div>
@@ -2342,54 +2338,15 @@ function updateCorrections() {
 }
 
 // ─── Méthode de correction du pôle Nord ──────────────────────────
-let poleMethod   = 'auto';  // 'auto' | 'manual' | 'magnetic'
-let manualDecl   = 0;       // valeur manuelle en degrés
+let poleMethod   = 'auto';
+let manualDecl   = 0;
 
-function setPoleMethod(method) {
-  poleMethod = method;
-  const row = document.getElementById('manual-decl-row');
-  if (row) row.classList.toggle('active', method === 'manual');
-  if (method === 'manual') {
-    const sign = manualDecl >= 0 ? '+' : '';
-    setText('decl-val', sign + manualDecl.toFixed(2) + '°');
-    setStyle('decl-val', 'color', 'var(--amber)');
-    setText('decl-status', 'correction manuelle');
-    setStyle('decl-status', 'color', 'var(--amber)');
-  } else if (method === 'magnetic') {
-    setText('decl-val', '0.00°');
-    setStyle('decl-val', 'color', 'var(--text-dim)');
-    setText('decl-status', 'aucune correction');
-    setStyle('decl-status', 'color', 'var(--text-dim)');
-  } else {
-    updateDeclDisplay();
-  }
-  // Recalcule immédiatement le heading avec la nouvelle correction
-  applyDeclCorrection();
-}
-
-function applyManualDecl(val) {
-  const v = parseFloat(val);
-  manualDecl = isNaN(v) ? 0 : Math.max(-90, Math.min(90, parseFloat(v.toFixed(2))));
-  if (poleMethod === 'manual') {
-    const sign = manualDecl >= 0 ? '+' : '';
-    setText('decl-val', sign + manualDecl.toFixed(2) + '°');
-    setStyle('decl-val', 'color', 'var(--amber)');
-    setText('decl-status', 'correction manuelle');
-    setStyle('decl-status', 'color', 'var(--amber)');
-  }
-  // Recalcule immédiatement le heading avec la nouvelle valeur manuelle
-  applyDeclCorrection();
-}
-
-// Retourne la déclinaison à appliquer selon la méthode choisie
 function getEffectiveDecl() {
   if (poleMethod === 'magnetic') return 0;
   if (poleMethod === 'manual')   return manualDecl;
-  return magDecl !== null ? magDecl : 0; // auto
+  return magDecl !== null ? magDecl : 0;
 }
 
-// Recalcule immédiatement le heading depuis le cap magnétique brut mémorisé
-// Appelée à chaque changement de méthode ou de valeur manuelle
 function applyDeclCorrection() {
   const decl = getEffectiveDecl();
   _rawHeading = ((_rawHeadingMag - decl) + 360) % 360;
@@ -2426,25 +2383,77 @@ function togglePanel(titleEl) {
 
 // ─── Offcanvas ────────────────────────────────────────────────────
 function toggleOffcanvas() {
-  const panel   = document.getElementById('offcanvas-panel');
-  const overlay = document.getElementById('offcanvas-overlay');
-  const btn     = document.getElementById('hamburger-btn');
-  const isOpen  = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  overlay.classList.toggle('open', !isOpen);
-  btn.classList.toggle('open', !isOpen);
+  const panel  = document.getElementById('offcanvas-panel');
+  const isOpen = panel.classList.contains('open');
+  if (isOpen) {
+    closeOffcanvas(); // applique les réglages à la fermeture
+  } else {
+    panel.classList.add('open');
+    document.getElementById('offcanvas-overlay').classList.add('open');
+    document.getElementById('hamburger-btn').classList.add('open');
+  }
 }
 
 function closeOffcanvas() {
   document.getElementById('offcanvas-panel').classList.remove('open');
   document.getElementById('offcanvas-overlay').classList.remove('open');
   document.getElementById('hamburger-btn').classList.remove('open');
+
+  // Appliquer les réglages de correction du pôle Nord à la fermeture
+  const selected = document.querySelector('input[name="pole-method"]:checked');
+  if (selected) {
+    const method = selected.value;
+    const manualVal = parseFloat(document.getElementById('manual-decl-input').value);
+    manualDecl = isNaN(manualVal) ? 0 : Math.max(-90, Math.min(90, parseFloat(manualVal.toFixed(2))));
+    poleMethod = method;
+
+    // Mettre à jour l'affichage des boxes GPS
+    if (method === 'manual') {
+      const sign = manualDecl >= 0 ? '+' : '';
+      setText('decl-val', sign + manualDecl.toFixed(2) + '°');
+      setStyle('decl-val', 'color', 'var(--amber)');
+      setText('decl-status', 'correction manuelle');
+      setStyle('decl-status', 'color', 'var(--amber)');
+    } else if (method === 'magnetic') {
+      setText('decl-val', '0.00°');
+      setStyle('decl-val', 'color', 'var(--text-dim)');
+      setText('decl-status', 'aucune correction');
+      setStyle('decl-status', 'color', 'var(--text-dim)');
+    } else {
+      updateDeclDisplay();
+    }
+
+    // Appliquer immédiatement la correction au heading
+    applyDeclCorrection();
+  }
 }
 
-// ─── Mode nuit ────────────────────────────────────────────────────
-function toggleNightMode(on) {
-  document.body.classList.toggle('night-mode', on);
-}
+// Afficher/masquer le champ manuel selon la sélection (UX uniquement, sans appliquer)
+document.addEventListener('DOMContentLoaded', () => {
+  // Radio pole-method : afficher/masquer champ manuel (UX uniquement)
+  document.querySelectorAll('input[name="pole-method"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const row = document.getElementById('manual-decl-row');
+      if (row) row.classList.toggle('active', radio.value === 'manual' && radio.checked);
+    });
+  });
+
+  // Jauges altitude
+  document.getElementById('alt-track').setAttribute('d', altArcPath(0, 90, AG.R));
+  initAltGauge();
+  updateAltGauge(0, 0);
+  document.getElementById('wiz-alt-gauge').querySelector('path').setAttribute('d', altArcPath(0, 90, AG.R));
+  initWizAltGauge();
+  updateWizAltGauge(0, 0);
+  document.getElementById('polaris-core').setAttribute('cy', 240);
+
+  // Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(() => console.log('[SW] Service Worker enregistré — app disponible hors ligne'))
+      .catch(e => console.warn('[SW] Echec enregistrement:', e));
+  }
+});
 
 // ─── Helper sécurisé — ne plante jamais si l'élément est absent
 function $id(id) {
@@ -2944,23 +2953,10 @@ function startSimulation() {
 }
 
 // ─── Init on load ─────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('alt-track').setAttribute('d', altArcPath(0, 90, AG.R));
-  initAltGauge();
-  updateAltGauge(0, 0);
-  document.getElementById('wiz-alt-gauge').querySelector('path').setAttribute('d', altArcPath(0, 90, AG.R));
-  initWizAltGauge();
-  updateWizAltGauge(0, 0);
-  // Init reticle SA Console (centre 150,150, r=62, HA=0 → y=150-62=88)
-  document.getElementById('polaris-core').setAttribute('cy', 240);
-
-  // ─── Service Worker (cache offline) ─────────────────────────────
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { scope: './' })
-      .then(() => console.log('[SW] Service Worker enregistré — app disponible hors ligne'))
-      .catch(e => console.warn('[SW] Echec enregistrement:', e));
-  }
-});
+// ─── Mode nuit ────────────────────────────────────────────────────
+function toggleNightMode(on) {
+  document.body.classList.toggle('night-mode', on);
+}
 </script>
 </body>
 </html>
