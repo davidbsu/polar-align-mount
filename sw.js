@@ -1,10 +1,11 @@
-const CACHE = 'polar-align-v1.0.4';
+const CACHE = 'polar-align-v1.0.5';
+const VERSION = 'v1.0.5';
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.add('./'))
-      .then(() => self.skipWaiting()) // Activation immédiate sans attendre la fermeture des onglets
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -14,14 +15,20 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(
         keys.filter(k => k !== CACHE).map(k => caches.delete(k))
       ))
-      .then(() => self.clients.claim()) // Prendre le contrôle de tous les onglets immédiatement
+      .then(() => self.clients.claim())
       .then(() => {
-        // Notifier tous les clients qu'une nouvelle version est disponible
         self.clients.matchAll().then(clients => {
           clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
         });
       })
   );
+});
+
+// Répondre aux messages de l'application
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'GET_VERSION') {
+    e.source.postMessage({ type: 'SW_VERSION', version: VERSION });
+  }
 });
 
 self.addEventListener('fetch', e => {
