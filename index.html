@@ -1945,7 +1945,35 @@ function computeMagneticDeclination(latDeg, lngDeg) {
 
 
 
+// ─── Cache déclinaison magnétique ────────────────────────────────
+// Ne rappelle l'API NOAA que si la position change de plus de 10 km
+let _declCacheLat  = null;
+let _declCacheLng  = null;
+const DECL_CACHE_KM = 10;
+
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const R  = 6371;
+  const dL = (lat2 - lat1) * Math.PI / 180;
+  const dl = (lon2 - lon1) * Math.PI / 180;
+  const a  = Math.sin(dL/2)**2 +
+             Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) * Math.sin(dl/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function shouldRefreshDecl(latDeg, lngDeg) {
+  if (_declCacheLat === null) return true;
+  return haversineKm(_declCacheLat, _declCacheLng, latDeg, lngDeg) > DECL_CACHE_KM;
+}
+
 function fetchMagneticDeclination(latDeg, lngDeg) {
+  // Ne rappelle l'API que si la position a changé de plus de 10 km
+  if (!shouldRefreshDecl(latDeg, lngDeg)) {
+    console.log('[magDecl] cache valide (< 10 km), pas de nouvel appel API');
+    return;
+  }
+  _declCacheLat = latDeg;
+  _declCacheLng = lngDeg;
+
   // API NOAA WMM2025 — clé zNEw7, sans paramètres de date (utilise la date du jour)
   const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
               `?lat1=${latDeg.toFixed(5)}&lon1=${lngDeg.toFixed(5)}&key=zNEw7&resultFormat=json`;
@@ -2928,6 +2956,7 @@ function stopSensors() {
   window.removeEventListener('deviceorientation', handleOrientation, true);
   window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
   realOrientationReceived = false;
+  _declCacheLat = null; _declCacheLng = null; // forcer rappel API à la prochaine session
   // Réinitialise les étapes validées
   for (let i = 0; i < 4; i++) stepsDone[i] = false;
   refreshStepIndicators();
