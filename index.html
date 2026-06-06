@@ -1955,7 +1955,10 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
     console.warn('[magDecl] erreur:', e.message);
     magDecl = 0;
   }
-  updateDeclDisplay();
+  // N'afficher que si le mode auto est actif — ne pas écraser les autres modes
+  if (poleMethod === 'auto') updateDeclDisplay();
+  // Recalculer le heading dans tous les cas (la valeur magDecl est utilisée en auto)
+  if (poleMethod === 'auto') applyDeclCorrection();
 }
 
 function updateDeclDisplay() {
@@ -2408,6 +2411,7 @@ function closeOffcanvas() {
 
   // Appliquer les réglages de correction du pôle Nord à la fermeture
   const selected = document.querySelector('input[name="pole-method"]:checked');
+  console.log('[closeOffcanvas] méthode sélectionnée:', selected ? selected.value : 'aucune');
   if (selected) {
     const method = selected.value;
     const manualVal = parseFloat(document.getElementById('manual-decl-input').value);
