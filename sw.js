@@ -1,10 +1,10 @@
-const CACHE = 'polar-align-v1.0.3';
+const CACHE = 'polar-align-v1.0.4';
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
       .then(c => c.add('./'))
-      .then(() => self.skipWaiting())
+      .then(() => self.skipWaiting()) // Activation immédiate sans attendre la fermeture des onglets
   );
 });
 
@@ -14,12 +14,17 @@ self.addEventListener('activate', e => {
       .then(keys => Promise.all(
         keys.filter(k => k !== CACHE).map(k => caches.delete(k))
       ))
-      .then(() => self.clients.claim())
+      .then(() => self.clients.claim()) // Prendre le contrôle de tous les onglets immédiatement
+      .then(() => {
+        // Notifier tous les clients qu'une nouvelle version est disponible
+        self.clients.matchAll().then(clients => {
+          clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
+        });
+      })
   );
 });
 
 self.addEventListener('fetch', e => {
-  // Ignorer les requêtes non-GET et les requêtes vers des APIs externes
   if (e.request.method !== 'GET') return;
   if (e.request.url.includes('ngdc.noaa.gov')) return;
 
@@ -34,7 +39,6 @@ self.addEventListener('fetch', e => {
           return resp;
         })
         .catch(() => {
-          // Hors ligne et ressource non cachée → retourner la page principale
           return caches.match('./') || new Response('Hors ligne', {status: 503});
         });
     })
