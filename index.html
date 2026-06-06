@@ -1946,19 +1946,28 @@ function computeMagneticDeclination(latDeg, lngDeg) {
 
 
 function fetchMagneticDeclination(latDeg, lngDeg) {
-  console.log('[magDecl] fetchMagneticDeclination appelée, lat=', latDeg, 'lng=', lngDeg);
-  try {
-    magDecl = computeMagneticDeclination(latDeg, lngDeg);
-    console.log('[magDecl] résultat =', magDecl);
-    if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
-  } catch(e) {
-    console.warn('[magDecl] erreur:', e.message);
-    magDecl = 0;
-  }
-  // N'afficher que si le mode auto est actif — ne pas écraser les autres modes
-  if (poleMethod === 'auto') updateDeclDisplay();
-  // Recalculer le heading dans tous les cas (la valeur magDecl est utilisée en auto)
-  if (poleMethod === 'auto') applyDeclCorrection();
+  // API NOAA WMM2025 — clé zNEw7, sans paramètres de date (utilise la date du jour)
+  const url = `https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination` +
+              `?lat1=${latDeg.toFixed(5)}&lon1=${lngDeg.toFixed(5)}&key=zNEw7&resultFormat=json`;
+
+  fetch(url)
+    .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(data => {
+      const val = parseFloat(data.result[0].declination);
+      if (isNaN(val)) throw new Error('valeur invalide');
+      magDecl = val;
+      console.log('[magDecl] NOAA API =', magDecl.toFixed(3) + '°');
+      if (poleMethod === 'auto') { updateDeclDisplay(); applyDeclCorrection(); }
+    })
+    .catch(err => {
+      console.warn('[magDecl] API NOAA échouée (' + err.message + '), fallback table WMM2025');
+      try {
+        magDecl = computeMagneticDeclination(latDeg, lngDeg);
+        if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
+      } catch(e) { magDecl = 0; }
+      console.log('[magDecl] table WMM2025 =', magDecl.toFixed(3) + '°');
+      if (poleMethod === 'auto') { updateDeclDisplay(); applyDeclCorrection(); }
+    });
 }
 
 function updateDeclDisplay() {
