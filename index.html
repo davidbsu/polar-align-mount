@@ -1857,6 +1857,7 @@ let lat = null, lng = null, elevation = null;
 
 // Raw sensor values (set by events / simulation)
 let _rawNS = 0, _rawEO = 0, _rawHeading = 0, _rawAlt = 45;
+let _rawHeadingMag = 0; // cap magnétique brut, sans correction de déclinaison
 
 // Smoothed values — what the UI actually reads
 let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
@@ -2079,21 +2080,16 @@ function updateOrientation(event) {
   if (event.beta !== null) { _rawNS = event.beta; _rawEO = event.gamma; }
 
   if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)) {
-    // iOS : webkitCompassHeading est le cap magnétique vrai (0=N, croissant horaire)
-    _rawHeading = event.webkitCompassHeading;
+    _rawHeadingMag = event.webkitCompassHeading;
   } else if (event.absolute === true && event.alpha !== null) {
-    // Android deviceorientationabsolute : alpha absolu, 0=N, ANTIHORAIRE → convertir
-    _rawHeading = (360 - event.alpha + 360) % 360;
+    _rawHeadingMag = (360 - event.alpha + 360) % 360;
   } else if (event.alpha !== null) {
-    // Fallback deviceorientation standard : alpha relatif → approximation
-    _rawHeading = (360 - event.alpha + 360) % 360;
+    _rawHeadingMag = (360 - event.alpha + 360) % 360;
   }
 
   // Correction pôle Nord selon la méthode choisie
   const decl = getEffectiveDecl();
-  if (decl !== 0) {
-    _rawHeading = ((_rawHeading - decl) + 360) % 360;
-  }
+  _rawHeading = ((_rawHeadingMag - decl) + 360) % 360;
 
   _rawAlt = Math.max(0, Math.min(90, Math.abs(_rawNS)));
   scheduleUI();
@@ -2354,7 +2350,6 @@ function setPoleMethod(method) {
   const row = document.getElementById('manual-decl-row');
   if (row) row.classList.toggle('active', method === 'manual');
   if (method === 'manual') {
-    // Afficher la valeur manuelle actuelle dans les boxes GPS
     const sign = manualDecl >= 0 ? '+' : '';
     setText('decl-val', sign + manualDecl.toFixed(2) + '°');
     setStyle('decl-val', 'color', 'var(--amber)');
@@ -2366,9 +2361,10 @@ function setPoleMethod(method) {
     setText('decl-status', 'aucune correction');
     setStyle('decl-status', 'color', 'var(--text-dim)');
   } else {
-    // Auto : restaurer l'affichage WMM
     updateDeclDisplay();
   }
+  // Recalcule immédiatement le heading avec la nouvelle correction
+  applyDeclCorrection();
 }
 
 function applyManualDecl(val) {
@@ -2381,6 +2377,8 @@ function applyManualDecl(val) {
     setText('decl-status', 'correction manuelle');
     setStyle('decl-status', 'color', 'var(--amber)');
   }
+  // Recalcule immédiatement le heading avec la nouvelle valeur manuelle
+  applyDeclCorrection();
 }
 
 // Retourne la déclinaison à appliquer selon la méthode choisie
@@ -2388,6 +2386,14 @@ function getEffectiveDecl() {
   if (poleMethod === 'magnetic') return 0;
   if (poleMethod === 'manual')   return manualDecl;
   return magDecl !== null ? magDecl : 0; // auto
+}
+
+// Recalcule immédiatement le heading depuis le cap magnétique brut mémorisé
+// Appelée à chaque changement de méthode ou de valeur manuelle
+function applyDeclCorrection() {
+  const decl = getEffectiveDecl();
+  _rawHeading = ((_rawHeadingMag - decl) + 360) % 360;
+  scheduleUI();
 }
 
 // ─── Étalonnage niveau à bulle ────────────────────────────────────
@@ -2930,7 +2936,8 @@ function startSimulation() {
     simT += 0.04;
     _rawNS      = Math.sin(simT * 0.3) * 3;
     _rawEO      = Math.cos(simT * 0.4) * 2;
-    _rawHeading = ((45 + Math.sin(simT * 0.2) * 10) + 360) % 360;
+    _rawHeadingMag = ((45 + Math.sin(simT * 0.2) * 10) + 360) % 360;
+    _rawHeading    = ((_rawHeadingMag - getEffectiveDecl()) + 360) % 360;
     _rawAlt     = 45 + Math.sin(simT * 0.15) * 3;
     scheduleUI();
   }, 50);
