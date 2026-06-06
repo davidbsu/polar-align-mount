@@ -1179,13 +1179,13 @@ document.head.appendChild(mLink);
         <div class="radio-dot"></div>
         <div>
           <div class="radio-label">Pôle Nord Céleste (manuel)</div>
-          <div class="radio-sub">Entrez la déclinaison magnétique locale</div>
+          <div class="radio-sub">Entrez la correction à ajouter au cap magnétique</div>
         </div>
       </label>
 
       <!-- Champ de saisie manuelle -->
       <div class="manual-input-row" id="manual-decl-row">
-        <label>Déclinaison :</label>
+        <label>Correction :</label>
         <input type="number" id="manual-decl-input" value="0.00" step="0.01" min="-90" max="90">
         <span>°</span>
       </div>
@@ -1244,7 +1244,7 @@ document.head.appendChild(mLink);
         <span class="value" id="acc-val">---</span><span class="unit">m</span>
       </div>
       <div class="data-box">
-        <label>Déclinaison mag.</label>
+        <label>Correction Compas</label>
         <span class="value" id="decl-val" style="font-size:13px">---</span>
       </div>
       <div class="data-box">
@@ -1967,9 +1967,11 @@ function updateDeclDisplay() {
     if (st) st.textContent = 'en attente GPS';
     return;
   }
-  const sign = magDecl >= 0 ? '+' : '';
-  el.textContent = sign + magDecl.toFixed(2) + '°';
-  el.style.color = Math.abs(magDecl) > 2 ? 'var(--amber)' : 'var(--accent2)';
+  // Correction compas = −déclinaison (convention : positif = ajouter à l'Est)
+  const correction = -magDecl;
+  const sign = correction >= 0 ? '+' : '';
+  el.textContent = sign + correction.toFixed(2) + '°';
+  el.style.color = Math.abs(correction) > 2 ? 'var(--amber)' : 'var(--accent2)';
   if (st) {
     st.textContent = '✓ correction appliquée';
     st.style.color = 'var(--green)';
@@ -2342,8 +2344,13 @@ let poleMethod   = 'auto';
 let manualDecl   = 0;
 
 function getEffectiveDecl() {
+  // Retourne la déclinaison interne (appliquée via _rawHeading = _rawHeadingMag - decl)
+  // Mode magnétique : aucune correction → déclinaison = 0
   if (poleMethod === 'magnetic') return 0;
-  if (poleMethod === 'manual')   return manualDecl;
+  // Mode manuel : l'utilisateur entre une correction à AJOUTER au cap magnétique
+  // cap vrai = cap mag + correction  →  déclinaison interne = -correction
+  if (poleMethod === 'manual') return -manualDecl;
+  // Mode auto : déclinaison WMM (cap vrai = cap mag - déclinaison)
   return magDecl !== null ? magDecl : 0;
 }
 
