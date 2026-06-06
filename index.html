@@ -2032,7 +2032,10 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
       if (isNaN(val)) throw new Error('valeur invalide');
       magDecl = val;
       console.log('[magDecl] NOAA API =', magDecl.toFixed(3) + '°');
-      if (poleMethod === 'auto') { updateDeclDisplay(); applyDeclCorrection(); }
+      if (poleMethod === 'auto') {
+        updateDeclDisplay(true);  // true = source NOAA
+        applyDeclCorrection();
+      }
     })
     .catch(err => {
       console.warn('[magDecl] API NOAA échouée (' + err.message + '), fallback table WMM2025');
@@ -2041,11 +2044,14 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
         if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
       } catch(e) { magDecl = 0; }
       console.log('[magDecl] table WMM2025 =', magDecl.toFixed(3) + '°');
-      if (poleMethod === 'auto') { updateDeclDisplay(); applyDeclCorrection(); }
+      if (poleMethod === 'auto') {
+        updateDeclDisplay(false); // false = source table locale
+        applyDeclCorrection();
+      }
     });
 }
 
-function updateDeclDisplay() {
+function updateDeclDisplay(fromNoaa) {
   const el = document.getElementById('decl-val');
   const st = document.getElementById('decl-status');
   if (!el) return;
@@ -2058,8 +2064,10 @@ function updateDeclDisplay() {
   el.textContent = sign + magDecl.toFixed(2) + '°';
   el.style.color = Math.abs(magDecl) > 2 ? 'var(--amber)' : 'var(--accent2)';
   if (st) {
-    st.textContent = '✓ correction appliquée';
+    // Astérisque uniquement si la valeur vient de l'API NOAA
+    st.textContent = fromNoaa ? '✓ correction appliquée *' : '✓ correction appliquée';
     st.style.color = 'var(--green)';
+    st.title = fromNoaa ? '* Source : API NOAA WMM2025' : 'Source : table WMM2025 locale';
   }
 }
 
