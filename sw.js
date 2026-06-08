@@ -1,9 +1,10 @@
-const CACHE = 'polar-align-v1.0.6';
+const CACHE = 'polar-align-v1.0.7';
+const ASSETS = ['./', './manifest.json'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
     caches.open(CACHE)
-      .then(c => c.add('./'))
+      .then(c => c.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
