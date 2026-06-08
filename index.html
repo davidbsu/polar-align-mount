@@ -6,30 +6,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Polar Align">
 <meta name="theme-color" content="#06090f">
-<script>
-// Manifest PWA inline
-const manifest = {
-  name: 'Polar Align',
-  short_name: 'PolarAlign',
-  description: 'Mise en station monture équatoriale',
-  start_url: './',
-  display: 'standalone',
-  background_color: '#06090f',
-  theme_color: '#06090f',
-  orientation: 'portrait',
-  icons: [{
-    src: 'https://thedavidsuniverse.fr/images/polar-align-mount.png',
-    sizes: '180x180',
-    type: 'image/png',
-    purpose: 'any maskable'
-  }]
-};
-const mBlob = new Blob([JSON.stringify(manifest)], {type:'application/manifest+json'});
-const mUrl  = URL.createObjectURL(mBlob);
-const mLink = document.createElement('link');
-mLink.rel = 'manifest'; mLink.href = mUrl;
-document.head.appendChild(mLink);
-</script>
+<link rel="manifest" href="./manifest.json">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>PolAlign — Mise en Station</title>
 <style>
@@ -1094,8 +1071,8 @@ document.head.appendChild(mLink);
   }
   .manual-input-row span { font-size: 10px; color: var(--text-dim); }
 </style>
-<link rel="icon" type="image/png" href="https://thedavidsuniverse.fr/images/polar-align-mount.png">
-<link rel="apple-touch-icon" href="https://thedavidsuniverse.fr/images/polar-align-mount.png">
+<link rel="icon" type="image/png" href="https://davidbsu.github.io/polar-align-mount/polar-align-mount.png">
+<link rel="apple-touch-icon" href="https://davidbsu.github.io/polar-align-mount/polar-align-mount.png">
 </head>
 <body>
 
@@ -1206,7 +1183,7 @@ document.head.appendChild(mLink);
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.6</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.7</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
