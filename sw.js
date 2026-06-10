@@ -1,4 +1,4 @@
-const CACHE = 'polar-align-v1.0.10';
+const CACHE = 'polar-align-v1.0.11';
 const ASSETS = ['./', './manifest.json'];
 
 self.addEventListener('install', e => {
@@ -27,13 +27,12 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
-  // Requêtes externes (API NOAA, icône) → laisser passer directement sans cache
+  // Requêtes externes → laisser passer sans interception
   if (!e.request.url.startsWith(self.location.origin)) {
-    e.respondWith(fetch(e.request));
-    return;
+    return; // ne pas appeler e.respondWith(), laisser le navigateur gérer
   }
 
-  // Requêtes locales → stratégie cache-first
+  // Requêtes locales → cache-first
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
