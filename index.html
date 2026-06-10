@@ -1223,7 +1223,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.10</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.11</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1931,7 +1931,7 @@ const POLARIS_OFFSET = 0.6492;  // degrés depuis le pôle céleste nord
 // Hémisphère Nord complet, lat 0-88°N, lon -180 à +178°E, pas 2°
 // 8100 points générés via API NOAA WMM2025 — juin 2026
 // Précision : ±0.15° — Mise à jour nécessaire en 2030 avec WMM2030
-let magDecl = null;
+let _magDeclFromNoaa = false; // indique si la dernière valeur vient de l'API NOAA
 
 // WMM_GRID � H�misph�re Nord, pas 2�, g�n�r� via API NOAA WMM2025
 // Date de g�n�ration : 2026-06-06
@@ -2060,9 +2060,10 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
       const val = parseFloat(data.result[0].declination);
       if (isNaN(val)) throw new Error('valeur invalide');
       magDecl = val;
+      _magDeclFromNoaa = true;
       console.log('[magDecl] NOAA API =', magDecl.toFixed(3) + '°');
       if (poleMethod === 'auto') {
-        updateDeclDisplay(true);  // true = source NOAA
+        updateDeclDisplay(true);
         applyDeclCorrection();
       }
     })
@@ -2072,9 +2073,10 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
         magDecl = computeMagneticDeclination(latDeg, lngDeg);
         if (isNaN(magDecl) || !isFinite(magDecl)) throw new Error('NaN');
       } catch(e) { magDecl = 0; }
+      _magDeclFromNoaa = false;
       console.log('[magDecl] table WMM2025 =', magDecl.toFixed(3) + '°');
       if (poleMethod === 'auto') {
-        updateDeclDisplay(false); // false = source table locale
+        updateDeclDisplay(false);
         applyDeclCorrection();
       }
     });
@@ -2629,7 +2631,7 @@ function closeOffcanvas() {
       setText('decl-status', 'aucune correction');
       setStyle('decl-status', 'color', 'var(--text-dim)');
     } else {
-      updateDeclDisplay();
+      updateDeclDisplay(_magDeclFromNoaa);
     }
 
     // Appliquer immédiatement la correction au heading
@@ -3130,7 +3132,8 @@ function stopSensors() {
   window.removeEventListener('deviceorientation', handleOrientation, true);
   window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
   realOrientationReceived = false;
-  _declCacheLat = null; _declCacheLng = null; // forcer rappel API à la prochaine session
+  _declCacheLat = null; _declCacheLng = null;
+  _magDeclFromNoaa = false;
   // Réinitialise les étapes validées
   for (let i = 0; i < 4; i++) stepsDone[i] = false;
   refreshStepIndicators();
