@@ -1143,6 +1143,36 @@
     </div>
   </div>
 
+  <!-- Réglage 2b : Étalonnage boussole -->
+  <div style="padding:14px 0;border-bottom:1px solid rgba(80,160,255,0.07)">
+    <div class="setting-label">🧭 Étalonnage boussole</div>
+    <div class="setting-sub" style="margin-bottom:12px">Correction du biais magnétique de la monture</div>
+
+    <div class="setting-section">Offset azimut</div>
+    <div class="manual-input-row active" style="margin-top:6px">
+      <label>Offset :</label>
+      <input type="number" id="calib-compass-input" value="0.000" step="0.001"
+             min="-20" max="20" oninput="previewCompassCalib(this.value)">
+      <span>°</span>
+    </div>
+    <div class="setting-sub" style="margin-top:8px;line-height:1.6">
+      Si la boussole dévie de +X° à cause de la monture, entrez −X° pour compenser. Plage : ±20°.
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button id="btn-save-compass" onclick="saveCompassCalib()" style="flex:1;padding:8px;border-radius:8px;
+        border:1px solid var(--border);background:rgba(0,0,0,0.3);color:var(--text-dim);
+        font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;cursor:pointer">
+        SAUVEGARDER
+      </button>
+      <button onclick="resetCompassCalib()" style="flex:1;padding:8px;border-radius:8px;
+        border:1px solid var(--border);background:rgba(0,0,0,0.3);color:var(--text-dim);
+        font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;cursor:pointer">
+        RÉINITIALISER
+      </button>
+    </div>
+  </div>
+
   <!-- Réglage 3 : Méthode de correction du pôle Nord -->
   <div style="padding:14px 0">
     <div class="setting-label">🧭 Correction du Pôle Nord</div>
@@ -1193,7 +1223,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.8</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.9</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1877,7 +1907,7 @@ function scheduleUI() {
     // Filtrage sur les valeurs brutes (sans étalonnage pour éviter la dérive)
     _fNS          = lpf(_fNS,          _rawNS,      ALPHA_LEVEL);
     _fEO          = lpf(_fEO,          _rawEO,      ALPHA_LEVEL);
-    heading       = lpfAngle(heading,  _rawHeading, ALPHA_HEADING);
+    heading       = lpfAngle(heading, (_rawHeading + calibCompass + 360) % 360, ALPHA_HEADING);
     deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
     // Appliquer les offsets d'étalonnage sur les valeurs affichées
     tiltNS = _fNS + calibNS;
@@ -1903,9 +1933,9 @@ const POLARIS_OFFSET = 0.6492;  // degrés depuis le pôle céleste nord
 // Précision : ±0.15° — Mise à jour nécessaire en 2030 avec WMM2030
 let magDecl = null;
 
-// WMM_GRID   H misph re Nord, pas 2 , g n r  via API NOAA WMM2025
-// Date de g n ration : 2026-06-06
-// Points : 8100  |  Pr cision :  0.15 
+// WMM_GRID � H�misph�re Nord, pas 2�, g�n�r� via API NOAA WMM2025
+// Date de g�n�ration : 2026-06-06
+// Points : 8100  |  Pr�cision : �0.15�
 
 const WMM_GRID = {
   0: {"-180":+9.98,"-178":+9.99,"-176":+9.96,"-174":+9.90,"-172":+9.83,"-170":+9.74,"-168":+9.65,"-166":+9.57,"-164":+9.50,"-162":+9.43,"-160":+9.39,"-158":+9.35,"-156":+9.33,"-154":+9.32,"-152":+9.32,"-150":+9.32,"-148":+9.32,"-146":+9.32,"-144":+9.31,"-142":+9.29,"-140":+9.26,"-138":+9.21,"-136":+9.15,"-134":+9.07,"-132":+8.98,"-130":+8.88,"-128":+8.77,"-126":+8.66,"-124":+8.54,"-122":+8.42,"-120":+8.31,"-118":+8.19,"-116":+8.07,"-114":+7.94,"-112":+7.80,"-110":+7.63,"-108":+7.43,"-106":+7.18,"-104":+6.88,"-102":+6.50,"-100":+6.04,"-98":+5.48,"-96":+4.83,"-94":+4.07,"-92":+3.20,"-90":+2.22,"-88":+1.14,"-86":-0.03,"-84":-1.28,"-82":-2.60,"-80":-3.98,"-78":-5.39,"-76":-6.83,"-74":-8.26,"-72":-9.67,"-70":-11.05,"-68":-12.38,"-66":-13.64,"-64":-14.81,"-62":-15.89,"-60":-16.86,"-58":-17.71,"-56":-18.44,"-54":-19.03,"-52":-19.48,"-50":-19.79,"-48":-19.96,"-46":-20.00,"-44":-19.90,"-42":-19.67,"-40":-19.32,"-38":-18.86,"-36":-18.31,"-34":-17.67,"-32":-16.95,"-30":-16.17,"-28":-15.33,"-26":-14.46,"-24":-13.57,"-22":-12.65,"-20":-11.74,"-18":-10.82,"-16":-9.93,"-14":-9.05,"-12":-8.21,"-10":-7.39,"-8":-6.61,"-6":-5.87,"-4":-5.16,"-2":-4.49,0:-3.84,2:-3.22,4:-2.62,6:-2.04,8:-1.48,10:-0.94,12:-0.43,14:+0.06,16:+0.51,18:+0.90,20:+1.24,22:+1.51,24:+1.69,26:+1.78,28:+1.78,30:+1.68,32:+1.48,34:+1.20,36:+0.85,38:+0.43,40:-0.03,42:-0.51,44:-1.00,46:-1.48,48:-1.93,50:-2.34,52:-2.71,54:-3.02,56:-3.28,58:-3.48,60:-3.64,62:-3.74,64:-3.81,66:-3.83,68:-3.82,70:-3.78,72:-3.71,74:-3.61,76:-3.47,78:-3.30,80:-3.10,82:-2.86,84:-2.58,86:-2.27,88:-1.94,90:-1.59,92:-1.24,94:-0.89,96:-0.56,98:-0.27,100:-0.02,102:+0.17,104:+0.30,106:+0.37,108:+0.38,110:+0.34,112:+0.25,114:+0.13,116:+0.01,118:-0.11,120:-0.21,122:-0.26,124:-0.26,126:-0.19,128:-0.06,130:+0.15,132:+0.43,134:+0.78,136:+1.18,138:+1.63,140:+2.12,142:+2.64,144:+3.18,146:+3.72,148:+4.27,150:+4.81,152:+5.35,154:+5.87,156:+6.38,158:+6.88,160:+7.35,162:+7.80,164:+8.22,166:+8.61,168:+8.95,170:+9.25,172:+9.50,174:+9.69,176:+9.84,178:+9.93},
@@ -2439,6 +2469,57 @@ function applyDeclCorrection() {
   scheduleUI();
 }
 
+// ─── Étalonnage boussole ──────────────────────────────────────────
+let calibCompass = 0;
+
+function previewCompassCalib(val) {
+  // Mise à jour en temps réel pendant la saisie (sans sauvegarder)
+  const v = parseFloat(val);
+  calibCompass = isNaN(v) ? 0 : Math.max(-20, Math.min(20, v));
+}
+
+function resetCompassCalib() {
+  calibCompass = 0;
+  const el = document.getElementById('calib-compass-input');
+  if (el) el.value = '0.000';
+}
+
+function saveCompassCalib() {
+  // Valider et arrondir à 3 décimales à la sauvegarde
+  const el = document.getElementById('calib-compass-input');
+  if (el) {
+    const v = parseFloat(el.value);
+    calibCompass = isNaN(v) ? 0 : Math.max(-20, Math.min(20, Math.round(v * 1000) / 1000));
+    el.value = calibCompass.toFixed(3);
+  }
+  try {
+    localStorage.setItem('polar-align-compass-calib', JSON.stringify({ compass: calibCompass }));
+    const btn = document.getElementById('btn-save-compass');
+    if (btn) {
+      btn.textContent = '✓ SAUVEGARDÉ';
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'var(--green)';
+      setTimeout(() => {
+        btn.textContent = 'SAUVEGARDER';
+        btn.style.color = '';
+        btn.style.borderColor = '';
+      }, 2000);
+    }
+  } catch(e) {}
+}
+
+function loadCompassCalib() {
+  try {
+    const saved = localStorage.getItem('polar-align-compass-calib');
+    if (saved) {
+      const { compass } = JSON.parse(saved);
+      calibCompass = Math.max(-20, Math.min(20, Math.round((compass || 0) * 1000) / 1000));
+      const el = document.getElementById('calib-compass-input');
+      if (el) el.value = calibCompass.toFixed(3);
+    }
+  } catch(e) {}
+}
+
 // ─── Étalonnage niveau à bulle ────────────────────────────────────
 let calibNS = 0, calibEO = 0; // offsets en degrés
 
@@ -2552,6 +2633,7 @@ function closeOffcanvas() {
 document.addEventListener('DOMContentLoaded', () => {
   // Charger les réglages d'étalonnage sauvegardés
   loadCalib();
+  loadCompassCalib();
   document.querySelectorAll('input[name="pole-method"]').forEach(radio => {
     radio.addEventListener('change', () => {
       const row = document.getElementById('manual-decl-row');
