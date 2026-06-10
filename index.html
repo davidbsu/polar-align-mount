@@ -1107,26 +1107,22 @@
   <!-- Réglage 2 : Étalonnage niveau à bulle -->
   <div style="padding:14px 0;border-bottom:1px solid rgba(80,160,255,0.07)">
     <div class="setting-label">⚖️ Étalonnage niveau à bulle</div>
-    <div class="setting-sub" style="margin-bottom:12px">Correction d'offset ±10° — pas 0.1°</div>
+    <div class="setting-sub" style="margin-bottom:12px">Correction d'offset ±10° — 2 décimales</div>
 
     <div class="setting-section">Inclinaison N-S</div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="setting-sub">Offset N-S</div>
-      <div class="stepper">
-        <button class="stepper-btn" onclick="adjustCalib('ns', -0.1)">−</button>
-        <div class="stepper-val" id="calib-ns-val">0.0°</div>
-        <button class="stepper-btn" onclick="adjustCalib('ns', +0.1)">+</button>
-      </div>
+    <div class="manual-input-row active" style="margin-top:6px">
+      <label>Offset N-S :</label>
+      <input type="number" id="calib-ns-input" value="0.00" step="0.01"
+             min="-10" max="10" oninput="previewCalib('ns', this.value)">
+      <span>°</span>
     </div>
 
     <div class="setting-section">Inclinaison E-O</div>
-    <div style="display:flex;align-items:center;justify-content:space-between">
-      <div class="setting-sub">Offset E-O</div>
-      <div class="stepper">
-        <button class="stepper-btn" onclick="adjustCalib('eo', -0.1)">−</button>
-        <div class="stepper-val" id="calib-eo-val">0.0°</div>
-        <button class="stepper-btn" onclick="adjustCalib('eo', +0.1)">+</button>
-      </div>
+    <div class="manual-input-row active" style="margin-top:6px">
+      <label>Offset E-O :</label>
+      <input type="number" id="calib-eo-input" value="0.00" step="0.01"
+             min="-10" max="10" oninput="previewCalib('eo', this.value)">
+      <span>°</span>
     </div>
 
     <div style="display:flex;gap:8px;margin-top:12px">
@@ -1223,7 +1219,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.12</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.13</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -2533,36 +2529,38 @@ function loadCompassCalib() {
 // ─── Étalonnage niveau à bulle ────────────────────────────────────
 let calibNS = 0, calibEO = 0; // offsets en degrés
 
+function previewCalib(axis, val) {
+  const v = parseFloat(val);
+  if (axis === 'ns') calibNS = isNaN(v) ? 0 : Math.max(-10, Math.min(10, v));
+  else               calibEO = isNaN(v) ? 0 : Math.max(-10, Math.min(10, v));
+}
+
 function adjustCalib(axis, delta) {
-  if (axis === 'ns') {
-    calibNS = Math.round(Math.max(-10, Math.min(10, calibNS + delta)) * 10) / 10;
-    setText('calib-ns-val', (calibNS >= 0 ? '+' : '') + calibNS.toFixed(1) + '°');
-  } else {
-    calibEO = Math.round(Math.max(-10, Math.min(10, calibEO + delta)) * 10) / 10;
-    setText('calib-eo-val', (calibEO >= 0 ? '+' : '') + calibEO.toFixed(1) + '°');
-  }
+  // Conservé pour compatibilité, non utilisé en v1.0.13
 }
 
 function resetCalib() {
   calibNS = 0; calibEO = 0;
-  setText('calib-ns-val', '0.0°');
-  setText('calib-eo-val', '0.0°');
+  const ns = document.getElementById('calib-ns-input');
+  const eo = document.getElementById('calib-eo-input');
+  if (ns) ns.value = '0.00';
+  if (eo) eo.value = '0.00';
 }
 
 function saveCalib() {
+  // Valider et arrondir à 2 décimales à la sauvegarde
+  const ns = document.getElementById('calib-ns-input');
+  const eo = document.getElementById('calib-eo-input');
+  if (ns) { calibNS = Math.max(-10, Math.min(10, Math.round(parseFloat(ns.value || 0) * 100) / 100)); ns.value = calibNS.toFixed(2); }
+  if (eo) { calibEO = Math.max(-10, Math.min(10, Math.round(parseFloat(eo.value || 0) * 100) / 100)); eo.value = calibEO.toFixed(2); }
   try {
     localStorage.setItem('polar-align-calib', JSON.stringify({ ns: calibNS, eo: calibEO }));
-    // Feedback visuel sur le bouton Save
     const btn = document.getElementById('btn-save-calib');
     if (btn) {
       btn.textContent = '✓ SAUVEGARDÉ';
       btn.style.color = 'var(--green)';
       btn.style.borderColor = 'var(--green)';
-      setTimeout(() => {
-        btn.textContent = 'SAUVEGARDER';
-        btn.style.color = '';
-        btn.style.borderColor = '';
-      }, 2000);
+      setTimeout(() => { btn.textContent = 'SAUVEGARDER'; btn.style.color = ''; btn.style.borderColor = ''; }, 2000);
     }
   } catch(e) {}
 }
@@ -2572,10 +2570,12 @@ function loadCalib() {
     const saved = localStorage.getItem('polar-align-calib');
     if (saved) {
       const { ns, eo } = JSON.parse(saved);
-      calibNS = Math.round(Math.max(-10, Math.min(10, ns || 0)) * 10) / 10;
-      calibEO = Math.round(Math.max(-10, Math.min(10, eo || 0)) * 10) / 10;
-      setText('calib-ns-val', (calibNS >= 0 ? '+' : '') + calibNS.toFixed(1) + '°');
-      setText('calib-eo-val', (calibEO >= 0 ? '+' : '') + calibEO.toFixed(1) + '°');
+      calibNS = Math.max(-10, Math.min(10, Math.round((ns || 0) * 100) / 100));
+      calibEO = Math.max(-10, Math.min(10, Math.round((eo || 0) * 100) / 100));
+      const nsEl = document.getElementById('calib-ns-input');
+      const eoEl = document.getElementById('calib-eo-input');
+      if (nsEl) nsEl.value = calibNS.toFixed(2);
+      if (eoEl) eoEl.value = calibEO.toFixed(2);
     }
   } catch(e) {}
 }
