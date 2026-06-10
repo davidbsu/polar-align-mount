@@ -1223,7 +1223,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.9</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.10</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -2043,10 +2043,18 @@ function fetchMagneticDeclination(latDeg, lngDeg) {
               `?lat1=${latDeg.toFixed(5)}&lon1=${lngDeg.toFixed(5)}&key=zNEw7&resultFormat=json`;
 
   const controller = new AbortController();
-  const timeout    = setTimeout(() => controller.abort(), 8000);
+  const timeout    = setTimeout(() => {
+    console.warn('[magDecl] Timeout 15s dépassé, annulation requête NOAA');
+    controller.abort();
+  }, 15000);
 
   fetch(url, { signal: controller.signal })
-    .then(r => { clearTimeout(timeout); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(r => {
+      clearTimeout(timeout);
+      console.log('[magDecl] Réponse NOAA reçue, status:', r.status);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
     .then(data => {
       const val = parseFloat(data.result[0].declination);
