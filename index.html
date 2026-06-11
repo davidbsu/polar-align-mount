@@ -1219,7 +1219,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.17</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.18</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1876,7 +1876,7 @@ let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
 // For level/tilt: high smoothing (slow gestures)
 // For heading/compass: moderate (can move faster)
 const ALPHA_LEVEL   = 0.05;  // very smooth — monture quasi-statique
-const ALPHA_HEADING = 0.30;  // réactif — bonne sensibilité aux petits mouvements
+const ALPHA_HEADING = 0.50;  // très réactif
 
 function lpf(prev, raw, alpha) {
   return prev + alpha * (raw - prev);
@@ -2369,7 +2369,7 @@ function updateAzimuthUI() {
   // On utilise directement alpha comme cap (iOS WebKit le donne déjà en degrés horaires depuis le Nord).
   const az = ((heading % 360) + 360) % 360;
   // Cap de la monture = az (0=N, 90=E, 180=S, 270=O)
-  document.getElementById('azimuth-val').textContent = az.toFixed(1) + '°';
+  document.getElementById('azimuth-val').textContent = az.toFixed(2) + '°';
 
   // Aiguille : on fixe l'aiguille SVG sur le Nord (haut du SVG)
   // et on tourne la ROSE sous elle de +az pour que le N de la rose
@@ -2907,7 +2907,7 @@ function updateStepAlt(v) {
 // ── Step 3: Azimut ──
 function updateStepAz(v) {
   if (v === null) return;
-  const azDisplay = (((heading % 360) + 360) % 360).toFixed(1);
+  const azDisplay = (((heading % 360) + 360) % 360).toFixed(2);
   const abs = Math.abs(v);
   const ok  = abs <= TOL.az;
   document.getElementById('dv-az').textContent = azDisplay + '°';
