@@ -24,12 +24,19 @@ self.addEventListener('activate', e => {
   );
 });
 
+// Permettre à la page de forcer l'activation immédiate
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
 
   // Requêtes externes → laisser passer sans interception
   if (!e.request.url.startsWith(self.location.origin)) {
-    return; // ne pas appeler e.respondWith(), laisser le navigateur gérer
+    return;
   }
 
   // Requêtes locales → cache-first
