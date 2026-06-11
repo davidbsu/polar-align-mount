@@ -1,4 +1,4 @@
-const CACHE = 'polar-align-v1.0.13';
+const CACHE = 'polar-align-v1.0.14';
 const ASSETS = ['./', './manifest.json'];
 
 self.addEventListener('install', e => {
