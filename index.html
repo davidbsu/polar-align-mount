@@ -1219,7 +1219,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.14</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.15</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1876,7 +1876,7 @@ let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
 // For level/tilt: high smoothing (slow gestures)
 // For heading/compass: moderate (can move faster)
 const ALPHA_LEVEL   = 0.05;  // very smooth — monture quasi-statique
-const ALPHA_HEADING = 0.15;  // plus réactif pour les petits mouvements de boussole
+const ALPHA_HEADING = 0.30;  // réactif — bonne sensibilité aux petits mouvements
 
 function lpf(prev, raw, alpha) {
   return prev + alpha * (raw - prev);
