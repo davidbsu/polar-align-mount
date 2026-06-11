@@ -1219,7 +1219,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.16</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.17</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -2669,12 +2669,10 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[SW] Service Worker enregistré');
         reg.update();
 
-        // Si un SW en attente existe déjà, lui demander de s'activer
         if (reg.waiting) {
           reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         }
 
-        // Détecter l'installation d'un nouveau SW
         reg.addEventListener('updatefound', () => {
           const newWorker = reg.installing;
           if (newWorker) {
@@ -2693,14 +2691,16 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.serviceWorker.addEventListener('message', e => {
       if (e.data && e.data.type === 'SW_UPDATED') {
         console.log('[SW] Nouvelle version détectée, rechargement...');
-        window.location.reload();
+        // Sur iOS standalone, location.reload() peut échouer
+        // On utilise location.href pour forcer un vrai rechargement
+        window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
       }
     });
 
     // Recharger si le controller change (nouveau SW actif)
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       console.log('[SW] Controller changé, rechargement...');
-      window.location.reload();
+      window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
     });
   }
 });
