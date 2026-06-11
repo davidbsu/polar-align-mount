@@ -2536,7 +2536,7 @@ function previewCalib(axis, val) {
 }
 
 function adjustCalib(axis, delta) {
-  // Conservé pour compatibilité, non utilisé en v1.0.13
+  // Conservé pour compatibilité, non utilisé en v1.0.15
 }
 
 function resetCalib() {
@@ -2664,8 +2664,26 @@ document.addEventListener('DOMContentLoaded', () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js', { scope: './' })
       .then(reg => {
-        console.log('[SW] Service Worker enregistré — app disponible hors ligne');
+        console.log('[SW] Service Worker enregistré');
         reg.update();
+
+        // Si un SW en attente existe déjà, lui demander de s'activer
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+
+        // Détecter l'installation d'un nouveau SW
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                console.log('[SW] Nouveau SW installé, activation...');
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          }
+        });
       })
       .catch(e => console.warn('[SW] Echec enregistrement:', e));
 
@@ -2675,6 +2693,12 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('[SW] Nouvelle version détectée, rechargement...');
         window.location.reload();
       }
+    });
+
+    // Recharger si le controller change (nouveau SW actif)
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      console.log('[SW] Controller changé, rechargement...');
+      window.location.reload();
     });
   }
 });
