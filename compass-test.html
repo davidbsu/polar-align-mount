@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test Boussole</title>
+<style>
+  body { font-family: monospace; background: #06090f; color: #aac; padding: 20px; }
+  .box { background: #1a2535; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+  .label { font-size: 11px; color: #556; margin-bottom: 4px; }
+  .value { font-size: 22px; color: #4af; font-weight: bold; }
+  button { background: #1a4a80; color: white; border: none; padding: 12px 24px;
+           border-radius: 8px; font-size: 14px; margin-right: 8px; cursor: pointer; }
+  #history { font-size: 12px; line-height: 2; color: #8ab; }
+  #status { font-size: 12px; color: #556; margin-top: 8px; }
+</style>
+</head>
+<body>
+<h2 style="color:#4af;font-size:16px">Test capteur boussole</h2>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+  <div class="box"><div class="label">webkitCompassHeading</div><div class="value" id="v-webkit">—</div></div>
+  <div class="box"><div class="label">alpha brut</div><div class="value" id="v-alpha">—</div></div>
+  <div class="box"><div class="label">Fréquence (ev/s)</div><div class="value" id="v-freq">—</div></div>
+  <div class="box"><div class="label">Pas minimal détecté</div><div class="value" id="v-step">—</div></div>
+</div>
+
+<div class="box">
+  <div class="label">Dernières valeurs</div>
+  <div id="history">—</div>
+</div>
+
+<button onclick="startTest()">Démarrer</button>
+<button onclick="stopTest()">Arrêter</button>
+<div id="status">Appuyez sur Démarrer</div>
+
+<script>
+let active = false, count = 0, t0 = null;
+let history = [], minStep = Infinity, lastVal = null;
+
+function handleOrientation(e) {
+  if (!active) return;
+  count++;
+  const now = Date.now();
+  if (!t0) t0 = now;
+  const freq = count / ((now - t0) / 1000 + 0.001);
+
+  const webkit = typeof e.webkitCompassHeading === 'number' ? e.webkitCompassHeading.toFixed(5) : '—';
+  const alpha  = e.alpha !== null ? e.alpha.toFixed(5) : '—';
+
+  document.getElementById('v-webkit').textContent = webkit;
+  document.getElementById('v-alpha').textContent  = alpha;
+  document.getElementById('v-freq').textContent   = freq.toFixed(1);
+
+  const val = typeof e.webkitCompassHeading === 'number' ? e.webkitCompassHeading : parseFloat(e.alpha);
+  if (!isNaN(val) && lastVal !== null) {
+    const diff = Math.abs(val - lastVal);
+    if (diff > 0.00001 && diff < 10) {
+      minStep = Math.min(minStep, diff);
+      document.getElementById('v-step').textContent = minStep.toFixed(5) + '°';
+    }
+  }
+  if (!isNaN(val)) lastVal = val;
+
+  history.unshift(webkit);
+  if (history.length > 10) history.pop();
+  document.getElementById('history').innerHTML = history.join('<br>');
+}
+
+async function startTest() {
+  active = false; count = 0; t0 = null; history = []; minStep = Infinity; lastVal = null;
+  document.getElementById('status').textContent = 'En attente...';
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      const p = await DeviceOrientationEvent.requestPermission();
+      if (p !== 'granted') { document.getElementById('status').textContent = 'Permission refusée'; return; }
+    } catch(e) { document.getElementById('status').textContent = 'Erreur: ' + e; return; }
+  }
+  active = true;
+  window.addEventListener('deviceorientation', handleOrientation, true);
+  document.getElementById('status').textContent = '✓ Actif — bougez lentement le téléphone';
+}
+
+function stopTest() {
+  active = false;
+  window.removeEventListener('deviceorientation', handleOrientation, true);
+  document.getElementById('status').textContent = 'Arrêté — pas minimal: ' +
+    (minStep === Infinity ? '—' : minStep.toFixed(5) + '°');
+}
+</script>
+</body>
+</html>
