@@ -1219,7 +1219,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.15</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.16</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1895,20 +1895,22 @@ let _uiPending = false;
 // Valeurs filtrées brutes (état interne du filtre — sans étalonnage)
 let _fNS = 0, _fEO = 0;
 
+function applyFilters() {
+  // Appliquer le filtre à chaque événement capteur (pas seulement à chaque frame)
+  _fNS           = lpf(_fNS,          _rawNS,      ALPHA_LEVEL);
+  _fEO           = lpf(_fEO,          _rawEO,      ALPHA_LEVEL);
+  heading        = lpfAngle(heading, (_rawHeading + calibCompass + 360) % 360, ALPHA_HEADING);
+  deviceAltitude = lpf(deviceAltitude, _rawAlt,    ALPHA_LEVEL);
+  tiltNS = _fNS + calibNS;
+  tiltEO = _fEO + calibEO;
+}
+
 function scheduleUI() {
-  if (_uiPending) return;
+  applyFilters(); // filtre appliqué immédiatement à chaque événement
+  if (_uiPending) return; // rendu limité à 60fps
   _uiPending = true;
   requestAnimationFrame(() => {
     _uiPending = false;
-    // Filtrage sur les valeurs brutes (sans étalonnage pour éviter la dérive)
-    _fNS          = lpf(_fNS,          _rawNS,      ALPHA_LEVEL);
-    _fEO          = lpf(_fEO,          _rawEO,      ALPHA_LEVEL);
-    heading       = lpfAngle(heading, (_rawHeading + calibCompass + 360) % 360, ALPHA_HEADING);
-    deviceAltitude = lpf(deviceAltitude, _rawAlt,   ALPHA_LEVEL);
-    // Appliquer les offsets d'étalonnage sur les valeurs affichées
-    tiltNS = _fNS + calibNS;
-    tiltEO = _fEO + calibEO;
-    // Render
     updateLevelUI();
     updateAltitudeUI();
     updateAzimuthUI();
