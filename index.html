@@ -1222,7 +1222,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.21</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.22</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1869,7 +1869,8 @@ let lat = null, lng = null, elevation = null;
 
 // Raw sensor values (set by events / simulation)
 let _rawNS = 0, _rawEO = 0, _rawHeading = 0, _rawAlt = 45;
-let _rawHeadingMag = 0; // cap magnétique brut, sans correction de déclinaison
+let _rawHeadingMag = 0;
+let _lastCompass = null, _lastAlpha = null; // pour interpolation iOS
 
 // Smoothed values — what the UI actually reads
 let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
@@ -2204,10 +2205,41 @@ function updateOrientation(event) {
   if (event.beta !== null) { _rawNS = event.beta; _rawEO = event.gamma; }
 
   if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)) {
-    _rawHeadingMag = event.webkitCompassHeading;
+    // iOS : combiner webkitCompassHeading (absolu, ~1°) avec alpha (relatif, ~0.01°)
+    // pour obtenir un cap absolu plus fluide
+    const compass = event.webkitCompassHeading;
+    if (event.alpha !== null) {
+      // Variation de alpha depuis la dernière valeur connue de compass
+      if (_lastCompass === null) {
+        _lastCompass   = compass;
+        _lastAlpha     = event.alpha;
+        _rawHeadingMag = compass;
+      } else {
+        // Détecter si compass a changé de palier
+        let diff = compass - _lastCompass;
+        if (diff > 180)  diff -= 360;
+        if (diff < -180) diff += 360;
+        if (Math.abs(diff) > 0.5) {
+          // Nouveau palier de compass → recaler alpha
+          _lastCompass = compass;
+          _lastAlpha   = event.alpha;
+          _rawHeadingMag = compass;
+        } else {
+          // Interpoler avec alpha (variation depuis le dernier recalage)
+          let alphaDiff = _lastAlpha - event.alpha; // alpha croît antihoraire
+          if (alphaDiff > 180)  alphaDiff -= 360;
+          if (alphaDiff < -180) alphaDiff += 360;
+          _rawHeadingMag = ((_lastCompass + alphaDiff) + 360) % 360;
+        }
+      }
+    } else {
+      _rawHeadingMag = compass;
+    }
   } else if (event.absolute === true && event.alpha !== null) {
+    _lastCompass = null; _lastAlpha = null;
     _rawHeadingMag = (360 - event.alpha + 360) % 360;
   } else if (event.alpha !== null) {
+    _lastCompass = null; _lastAlpha = null;
     _rawHeadingMag = (360 - event.alpha + 360) % 360;
   }
 
@@ -3164,6 +3196,7 @@ function stopSensors() {
   realOrientationReceived = false;
   _declCacheLat = null; _declCacheLng = null;
   _magDeclFromNoaa = false;
+  _lastCompass = null; _lastAlpha = null;
   // Réinitialise les étapes validées
   for (let i = 0; i < 4; i++) stepsDone[i] = false;
   refreshStepIndicators();
