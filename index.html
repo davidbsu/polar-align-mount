@@ -796,6 +796,74 @@
     padding: 0 8px;
   }
 
+  /* ══ Popup calibration boussole ══ */
+  .calib-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .calib-popup-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+  .calib-popup {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px;
+    max-width: 300px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(0,100,255,0.2);
+  }
+  .calib-popup-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .calib-popup-msg {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+  .calib-popup-btn {
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 32px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* Animation figure en 8 */
+  @keyframes figure8 {
+    0%   { offset-distance: 0%;   }
+    100% { offset-distance: 100%; }
+  }
+  .fig8-svg { margin: 0 auto 20px; display: block; }
+  .fig8-dot {
+    offset-path: path('M 75,60 C 75,35 45,20 30,40 C 15,60 45,80 75,60 C 105,40 135,20 120,40 C 105,60 75,80 75,60 Z');
+    offset-distance: 0%;
+    animation: figure8 2.5s linear infinite;
+  }
+
   /* Separator */
   .sep {
     height: 1px;
@@ -1082,6 +1150,35 @@
 </head>
 <body>
 
+<!-- Popup calibration boussole -->
+<div class="calib-popup-overlay" id="calib-popup-overlay">
+  <div class="calib-popup">
+    <div class="calib-popup-title">🧭 Calibration boussole</div>
+
+    <!-- Figure en 8 animée -->
+    <svg class="fig8-svg" viewBox="0 0 150 100" width="150" height="100">
+      <!-- Tracé du 8 -->
+      <path d="M 75,50 C 75,25 45,10 30,30 C 15,50 45,70 75,50 C 105,30 135,10 120,30 C 105,50 75,70 75,50 Z"
+            fill="none" stroke="rgba(58,143,255,0.25)" stroke-width="2"/>
+      <!-- Flèches directionnelles -->
+      <path d="M 75,50 C 75,25 45,10 30,30" fill="none" stroke="rgba(58,143,255,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <path d="M 30,30 C 15,50 45,70 75,50" fill="none" stroke="rgba(58,143,255,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <path d="M 75,50 C 105,30 135,10 120,30" fill="none" stroke="rgba(100,180,255,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <path d="M 120,30 C 105,50 75,70 75,50" fill="none" stroke="rgba(100,180,255,0.4)" stroke-width="1.5" stroke-dasharray="3,3"/>
+      <!-- Point animé -->
+      <circle r="7" fill="var(--accent2)" style="filter:drop-shadow(0 0 6px var(--accent2))">
+        <animateMotion dur="2.5s" repeatCount="indefinite"
+          path="M 75,50 C 75,25 45,10 30,30 C 15,50 45,70 75,50 C 105,30 135,10 120,30 C 105,50 75,70 75,50 Z"/>
+      </circle>
+    </svg>
+
+    <div class="calib-popup-msg">
+      Calibrez votre boussole en réalisant un 8 devant vous.
+    </div>
+    <button class="calib-popup-btn" onclick="closeCalibPopup()">OK, C'EST FAIT</button>
+  </div>
+</div>
+
 <!-- Hamburger -->
 <button class="hamburger" id="hamburger-btn" onclick="toggleOffcanvas()">
   <span></span><span></span><span></span>
@@ -1102,6 +1199,19 @@
     </div>
     <label class="toggle">
       <input type="checkbox" id="night-mode-toggle" onchange="toggleNightMode(this.checked)">
+      <div class="toggle-track"></div>
+      <div class="toggle-thumb"></div>
+    </label>
+  </div>
+
+  <!-- Réglage 1b : Popup calibration boussole -->
+  <div class="setting-row">
+    <div>
+      <div class="setting-label">🧭 Rappel calibration boussole</div>
+      <div class="setting-sub">Afficher le message au démarrage des capteurs</div>
+    </div>
+    <label class="toggle">
+      <input type="checkbox" id="calib-popup-toggle" checked onchange="saveCalibPopupPref(this.checked)">
       <div class="toggle-track"></div>
       <div class="toggle-thumb"></div>
     </label>
@@ -1222,7 +1332,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.22</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.23</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -2376,7 +2486,7 @@ function updateAltGauge(currentAlt, targetAlt) {
   tk.setAttribute('x2', t2.x.toFixed(1)); tk.setAttribute('y2', t2.y.toFixed(1));
 
   // Text
-  document.getElementById('alt-val-big').textContent = cur.toFixed(1) + '°';
+  document.getElementById('alt-val-big').textContent = cur.toFixed(2) + '°';
   document.getElementById('alt-val-big').setAttribute('fill', fillColor);
   document.getElementById('alt-val-target-label').textContent = `cible ${tgt.toFixed(2)}°`;
 }
@@ -2627,6 +2737,27 @@ function togglePanel(titleEl) {
   }
 }
 
+// ─── Popup calibration boussole ───────────────────────────────────
+function showCalibPopup() {
+  const pref = localStorage.getItem('polar-align-calib-popup');
+  if (pref === 'false') return; // désactivé par l'utilisateur
+  document.getElementById('calib-popup-overlay').classList.add('show');
+}
+
+function closeCalibPopup() {
+  document.getElementById('calib-popup-overlay').classList.remove('show');
+}
+
+function saveCalibPopupPref(enabled) {
+  localStorage.setItem('polar-align-calib-popup', enabled ? 'true' : 'false');
+}
+
+function loadCalibPopupPref() {
+  const pref = localStorage.getItem('polar-align-calib-popup');
+  const toggle = document.getElementById('calib-popup-toggle');
+  if (toggle) toggle.checked = pref !== 'false'; // activé par défaut
+}
+
 // ─── Offcanvas ────────────────────────────────────────────────────
 function toggleOffcanvas() {
   const panel  = document.getElementById('offcanvas-panel');
@@ -2682,6 +2813,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Charger les réglages d'étalonnage sauvegardés
   loadCalib();
   loadCompassCalib();
+  loadCalibPopupPref();
   document.querySelectorAll('input[name="pole-method"]').forEach(radio => {
     radio.addEventListener('change', () => {
       const row = document.getElementById('manual-decl-row');
@@ -2903,7 +3035,7 @@ function updateWizAltGauge(currentAlt, targetAlt) {
   document.getElementById('wiz-alt-target-tick').setAttribute('x2', t2.x.toFixed(1));
   document.getElementById('wiz-alt-target-tick').setAttribute('y2', t2.y.toFixed(1));
 
-  document.getElementById('wiz-alt-val-big').textContent = cur.toFixed(1) + '°';
+  document.getElementById('wiz-alt-val-big').textContent = cur.toFixed(2) + '°';
   document.getElementById('wiz-alt-val-big').setAttribute('fill', fillColor);
   document.getElementById('wiz-alt-val-target').textContent = `cible ${tgt.toFixed(2)}°`;
 }
@@ -2918,7 +3050,7 @@ function updateStepAlt(v) {
   // Update the mini arc gauge in the wizard card
   updateWizAltGauge(currentAlt, lat);
 
-  document.getElementById('dv-alt').textContent = currentAlt.toFixed(1) + '°';
+  document.getElementById('dv-alt').textContent = currentAlt.toFixed(2) + '°';
   document.getElementById('dv-alt').style.color = errColor(abs, TOL.alt);
   document.getElementById('dv-alt-target').textContent = lat.toFixed(2) + '°';
 
@@ -3081,6 +3213,7 @@ async function startSensors() {
   btn.textContent = '■ ARRÊTER LES CAPTEURS';
   btn.classList.add('active');
   requestWakeLock();
+  showCalibPopup();
 
   // ── 1. GPS ──────────────────────────────────────────────────────
   const gpsStatus = document.getElementById('gps-status');
