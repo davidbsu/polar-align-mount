@@ -1332,7 +1332,7 @@
   <!-- Version + Signature -->
   <div style="margin-top:32px;padding-top:16px;border-top:1px solid var(--border);text-align:center">
     <div style="font-family:'Orbitron',sans-serif;font-size:9px;letter-spacing:2px;
-                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.25</div>
+                color:var(--text-dim);margin-bottom:12px" id="app-version">v1.0.26</div>
     <div style="font-family:'Space Mono',monospace;font-size:8px;letter-spacing:1.5px;
                 color:var(--text-dim);line-height:2">
       App imaginée par<br>
@@ -1979,8 +1979,19 @@ let lat = null, lng = null, elevation = null;
 
 // Raw sensor values (set by events / simulation)
 let _rawNS = 0, _rawEO = 0, _rawHeading = 0, _rawAlt = 45;
+// ─── Variables orientation ────────────────────────────────────────
 let _rawHeadingMag = 0;
-let _lastCompass = null, _lastAlpha = null; // pour interpolation iOS
+// Filtre complémentaire iOS (webkitCompassHeading + rotationRate)
+let _iosHeading    = null;  // heading filtré iOS
+let _lastIosTime   = null;  // timestamp dernier événement
+// Android Magnetometer
+let _magSensor     = null;  // instance Magnetometer
+let _accSensor     = null;  // instance Accelerometer
+let _magX = 0, _magY = 0, _magZ = 0;
+let _accX = 0, _accY = 0, _accZ = 0;
+// Alpha complémentaire : 0=100% magnéto, 1=100% gyro
+// Pour usage statique (mise en station), on favorise largement le magnéto
+const IOS_GYRO_WEIGHT = 0.2; // 20% gyro, 80% magnéto → stable et réactif
 
 // Smoothed values — what the UI actually reads
 let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
@@ -1990,7 +2001,7 @@ let tiltNS = 0, tiltEO = 0, heading = 0, deviceAltitude = 45;
 // For level/tilt: high smoothing (slow gestures)
 // For heading/compass: moderate (can move faster)
 const ALPHA_LEVEL   = 0.05;  // very smooth — monture quasi-statique
-const ALPHA_HEADING = 1.0;   // pas de filtre — valeur brute directe
+const ALPHA_HEADING = 0.15;  // filtre léger — le filtre complémentaire fait le gros du travail
 
 function lpf(prev, raw, alpha) {
   return prev + alpha * (raw - prev);
@@ -2315,41 +2326,40 @@ function updateOrientation(event) {
   if (event.beta !== null) { _rawNS = event.beta; _rawEO = event.gamma; }
 
   if (typeof event.webkitCompassHeading === 'number' && !isNaN(event.webkitCompassHeading)) {
-    // iOS : combiner webkitCompassHeading (absolu, ~1°) avec alpha (relatif, ~0.01°)
-    // pour obtenir un cap absolu plus fluide
+    // ── iOS : filtre complémentaire magnéto + gyro ──
+    // webkitCompassHeading = référence absolue magnétique (~1° résolution)
+    // rotationRate.alpha   = gyroscope (°/s, très précis à court terme)
     const compass = event.webkitCompassHeading;
-    if (event.alpha !== null) {
-      // Variation de alpha depuis la dernière valeur connue de compass
-      if (_lastCompass === null) {
-        _lastCompass   = compass;
-        _lastAlpha     = event.alpha;
-        _rawHeadingMag = compass;
-      } else {
-        // Détecter si compass a changé de palier
-        let diff = compass - _lastCompass;
-        if (diff > 180)  diff -= 360;
-        if (diff < -180) diff += 360;
-        if (Math.abs(diff) > 0.5) {
-          // Nouveau palier de compass → recaler alpha
-          _lastCompass = compass;
-          _lastAlpha   = event.alpha;
-          _rawHeadingMag = compass;
-        } else {
-          // Interpoler avec alpha (variation depuis le dernier recalage)
-          let alphaDiff = _lastAlpha - event.alpha; // alpha croît antihoraire
-          if (alphaDiff > 180)  alphaDiff -= 360;
-          if (alphaDiff < -180) alphaDiff += 360;
-          _rawHeadingMag = ((_lastCompass + alphaDiff) + 360) % 360;
-        }
-      }
+    const now     = Date.now();
+
+    if (_iosHeading === null) {
+      // Initialisation
+      _iosHeading  = compass;
+      _lastIosTime = now;
     } else {
-      _rawHeadingMag = compass;
+      const dt = Math.min((now - _lastIosTime) / 1000, 0.1); // secondes, max 100ms
+      _lastIosTime = now;
+
+      // Intégrer le gyroscope (alpha = rotation Z en °/s, antihoraire sur iOS)
+      let gyroRate = 0;
+      if (event.rotationRate && event.rotationRate.alpha !== null) {
+        gyroRate = -event.rotationRate.alpha; // inverser pour convention horaire
+      }
+      const gyroPred = _iosHeading + gyroRate * dt;
+
+      // Filtre complémentaire : fusion gyro + magnéto
+      // Pour usage statique : favoriser le magnéto (plus stable sur longue durée)
+      let diff = compass - gyroPred;
+      if (diff > 180)  diff -= 360;
+      if (diff < -180) diff += 360;
+      _iosHeading = ((gyroPred + (1 - IOS_GYRO_WEIGHT) * diff) + 360) % 360;
     }
+    _rawHeadingMag = _iosHeading;
+
   } else if (event.absolute === true && event.alpha !== null) {
-    _lastCompass = null; _lastAlpha = null;
+    // ── Android deviceorientationabsolute ──
     _rawHeadingMag = (360 - event.alpha + 360) % 360;
   } else if (event.alpha !== null) {
-    _lastCompass = null; _lastAlpha = null;
     _rawHeadingMag = (360 - event.alpha + 360) % 360;
   }
 
@@ -3176,6 +3186,46 @@ function resetWizard() {
   goStep(0);
 }
 
+// ─── Android : calcul cap depuis magnétomètre brut ────────────────
+function updateHeadingFromMagnetometer() {
+  // Tilt compensation : corriger les composantes magnétiques avec l'inclinaison
+  const ax = _accX, ay = _accY, az = _accZ;
+  const norm = Math.sqrt(ax*ax + ay*ay + az*az);
+  if (norm === 0) return;
+  const pitch = Math.asin(-ay / norm);
+  const roll  = Math.asin( ax / norm);
+
+  // Composantes magnétiques compensées
+  const mx = _magX * Math.cos(pitch) + _magZ * Math.sin(pitch);
+  const my = _magX * Math.sin(roll)  * Math.sin(pitch) +
+             _magY * Math.cos(roll)  -
+             _magZ * Math.sin(roll)  * Math.cos(pitch);
+
+  // Cap magnétique
+  let heading = Math.atan2(-my, mx) * 180 / Math.PI;
+  if (heading < 0) heading += 360;
+
+  _rawHeadingMag = heading;
+  const decl = getEffectiveDecl();
+  _rawHeading = ((_rawHeadingMag - decl) + 360) % 360;
+  realOrientationReceived = true;
+  scheduleUI();
+}
+
+function startAndroidFallback() {
+  // Fallback : deviceorientationabsolute puis deviceorientation
+  const onAbsolute = (e) => {
+    if (e.absolute === true || e.webkitCompassHeading !== undefined) {
+      window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
+      window.removeEventListener('deviceorientation', handleOrientation, true);
+      window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+    }
+  };
+  window.addEventListener('deviceorientationabsolute', onAbsolute, { once: true, capture: true });
+  window.addEventListener('deviceorientationabsolute', handleOrientation, true);
+  window.addEventListener('deviceorientation', handleOrientation, true);
+}
+
 // ─── Wake Lock ───────────────────────────────────────────────────
 let wakeLock = null;
 
@@ -3262,20 +3312,41 @@ async function startSensors() {
       startSimulation();
     }
   } else if (!isIOS && typeof DeviceOrientationEvent !== 'undefined') {
-    // ── Android : écouter deviceorientationabsolute en priorité ──
-    // deviceorientationabsolute fournit alpha par rapport au Nord magnétique (absolu)
+    // ── Android : Magnetometer API en priorité, fallback deviceorientationabsolute ──
     realOrientationReceived = false;
-    const onAbsolute = (e) => {
-      if (e.absolute === true || e.webkitCompassHeading !== undefined) {
-        window.removeEventListener('deviceorientationabsolute', onAbsolute, true);
-        window.removeEventListener('deviceorientation', handleOrientation, true);
-        window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-      }
-    };
-    window.addEventListener('deviceorientationabsolute', onAbsolute, { once: true, capture: true });
-    window.addEventListener('deviceorientationabsolute', handleOrientation, true);
-    // Fallback sur deviceorientation si deviceorientationabsolute non supporté
-    window.addEventListener('deviceorientation', handleOrientation, true);
+
+    if (typeof Magnetometer !== 'undefined' && typeof Accelerometer !== 'undefined') {
+      // Magnetometer API disponible → calcul du cap depuis les composantes brutes
+      try {
+        _magSensor = new Magnetometer({ frequency: 20 });
+        _accSensor = new Accelerometer({ frequency: 20 });
+
+        _magSensor.addEventListener('reading', () => {
+          _magX = _magSensor.x; _magY = _magSensor.y; _magZ = _magSensor.z;
+          updateHeadingFromMagnetometer();
+        });
+        _accSensor.addEventListener('reading', () => {
+          _accX = _accSensor.x; _accY = _accSensor.y; _accZ = _accSensor.z;
+        });
+        _magSensor.addEventListener('error', () => startAndroidFallback());
+        _accSensor.addEventListener('error', () => startAndroidFallback());
+
+        Promise.all([
+          navigator.permissions.query({ name: 'magnetometer' }),
+          navigator.permissions.query({ name: 'accelerometer' }),
+        ]).then(([mag, acc]) => {
+          if (mag.state === 'granted' && acc.state === 'granted') {
+            _magSensor.start(); _accSensor.start();
+            realOrientationReceived = true;
+          } else {
+            startAndroidFallback();
+          }
+        }).catch(() => startAndroidFallback());
+
+      } catch(e) { startAndroidFallback(); }
+    } else {
+      startAndroidFallback();
+    }
     setTimeout(() => { if (!realOrientationReceived) startSimulation(); }, 2000);
   } else if (typeof DeviceOrientationEvent !== 'undefined') {
     // ── Desktop / autre ──
@@ -3327,6 +3398,10 @@ function stopSensors() {
   window.removeEventListener('deviceorientation', handleOrientation, true);
   window.removeEventListener('deviceorientationabsolute', handleOrientation, true);
   realOrientationReceived = false;
+  // Arrêter les capteurs Android si actifs
+  if (_magSensor) { try { _magSensor.stop(); } catch(e) {} _magSensor = null; }
+  if (_accSensor) { try { _accSensor.stop(); } catch(e) {} _accSensor = null; }
+  _iosHeading = null; _lastIosTime = null;
   _declCacheLat = null; _declCacheLng = null;
   _magDeclFromNoaa = false;
   _lastCompass = null; _lastAlpha = null;
